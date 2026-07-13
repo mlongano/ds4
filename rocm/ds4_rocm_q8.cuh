@@ -733,7 +733,7 @@ __global__ static void matmul_q8_0_f32_batch_sharedx_exact8_kernel(
     }
 }
 
-#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
+#if (defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)) && !defined(DS4_ROCM_NO_WMMA)
 typedef _Float16 __attribute__((ext_vector_type(16))) ds4_q8_half16_t;
 typedef float    __attribute__((ext_vector_type(8)))  ds4_q8_float8_t;
 

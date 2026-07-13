@@ -57,7 +57,7 @@ CUDA_LDLIBS ?= -lm -Xcompiler -pthread -L$(CUDA_HOME)/targets/sbsa-linux/lib -L$
 HIPCC ?= $(shell command -v hipcc 2>/dev/null || echo /opt/rocm/bin/hipcc)
 ROCM_ARCH ?= gfx1151
 ROCM_HOST_CFLAGS ?= -fPIC
-ROCM_CFLAGS ?= -O3 -ffast-math -g -fno-finite-math-only -pthread -D__HIP_PLATFORM_AMD__ -Wno-unused-command-line-argument --offload-arch=$(ROCM_ARCH)
+ROCM_CFLAGS ?= -O3 -ffast-math -g -fno-finite-math-only -pthread -D__HIP_PLATFORM_AMD__ -Wno-unused-command-line-argument --offload-arch=$(ROCM_ARCH) $(ROCM_EXTRA_CFLAGS)
 ROCM_LDLIBS ?= -lm -pthread -lhipblas -lhipblaslt -lrocblas
 ROCM_MMQ_Y ?= 64
 ROCM_MMQ_FLAGS := $(ROCM_CFLAGS) -std=c++17 -DGGML_USE_HIP -DDS4_HIP_MMQ_Y=$(ROCM_MMQ_Y) $(MMQ_INCLUDES)
@@ -67,7 +67,7 @@ DS4_LINK_LIBS ?= $(CUDA_LDLIBS)
 METAL_LDLIBS := $(LDLIBS)
 endif
 
-.PHONY: all help clean test test-rocm test-glm53-kda-rocm test-metal-session-batch test-mxfp4-cuda test-mxfp4-rocm test-cuda-session-batch test-cuda-mixed-batch dspark-acceptance dspark-verify-depth mtp-verify-depth cpu cuda cuda-spark cuda-generic cuda-regression strix-halo rocm
+.PHONY: all help clean test test-rocm test-glm53-kda-rocm test-metal-session-batch test-mxfp4-cuda test-mxfp4-rocm test-cuda-session-batch test-cuda-mixed-batch dspark-acceptance dspark-verify-depth mtp-verify-depth cpu cuda cuda-spark cuda-generic cuda-regression strix-halo rocm rdna4
 
 ifeq ($(UNAME_S),Darwin)
 .PHONY: metal-decode-schedule-bench metal-prefill-variant-bench check-mxfp4-half-lut
@@ -161,6 +161,7 @@ help:
 	@echo "  make cuda CUDA_ARCH=sm_N Build CUDA with an explicit nvcc -arch value"
 	@echo "  make strix-halo          Build ROCm for Strix Halo / gfx1151"
 	@echo "  make rocm                Alias for make strix-halo"
+	@echo "  make rdna4               Build ROCm for discrete RDNA4 GPUs / gfx1201"
 	@echo "  make test-mxfp4-rocm     Build and run the synthetic ROCm MXFP4 MoE test"
 	@echo "  make test-rocm           Core regression suite on ROCm-only hosts"
 	@echo "  make cpu                 Build CPU-only ./ds4, ./ds4-server, ./ds4-bench, ./ds4-eval, and ./ds4-agent"
@@ -191,6 +192,9 @@ strix-halo:
 		DS4_LINK_LIBS="$(ROCM_LDLIBS)"
 
 rocm: strix-halo
+
+rdna4:
+	$(MAKE) strix-halo ROCM_ARCH=gfx1201 ROCM_EXTRA_CFLAGS=-DDS4_ROCM_NO_WMMA
 
 # Core regression suite for ROCm-only hosts: the CUDA-specific binaries
 # (tests/test_sampling, the CUDA session/mixed-batch oracles) are not part
