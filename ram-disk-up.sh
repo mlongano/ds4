@@ -16,6 +16,16 @@ if [ ! -f "$SRC" ]; then
     exit 1
 fi
 
+# Serialize concurrent callers (e.g. pi-inference starting ds4-server.service
+# at the same moment ds4-chat is independently allocating the RAM disk):
+# without this, two invocations racing to cp the same 80GB into the same
+# .tmp path can interleave writes and corrupt it, or one's mv can land
+# mid-copy under the other. A blocked second caller just waits here, then
+# finds the file already correctly sized below and skips straight past.
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/ds4-ram-disk.lock"
+exec 200>"$LOCK_FILE"
+flock 200
+
 MOUNTED_BY_US=0
 if ! mountpoint -q "$RAM_DIR"; then
     echo "ds4-ram: mounting tmpfs at $RAM_DIR ($RAM_SIZE)" >&2
@@ -38,16 +48,19 @@ trap cleanup_on_failure ERR
 SRC_SIZE=$(stat -c%s "$SRC")
 if [ ! -f "$DST" ] || [ "$(stat -c%s "$DST")" != "$SRC_SIZE" ]; then
     echo "ds4-ram: copying model to RAM ($(( SRC_SIZE / 1073741824 )) GiB)" >&2
-    # Report copy progress (bytes written to the .tmp file so far) to a
-    # small file that /v1/transition reads, so pi-inference's live progress
-    # output shows a real percentage instead of a static "waiting" line for
-    # the ~40s this copy takes.
+    # Report copy progress (bytes written to the .tmp file so far) two ways:
+    # to a small file that /v1/transition reads (for pi-inference's live
+    # progress output), and directly to our own stderr as a single updating
+    # line (for direct callers like ds4-chat that never go through
+    # pi-inference at all).
     (
         while sleep 1; do
             [ -f "$DST.tmp" ] || continue
             CUR=$(stat -c%s "$DST.tmp" 2>/dev/null) || continue
             PCT=$(( CUR * 100 / SRC_SIZE ))
             printf '%d%% (%d/%d GiB)\n' "$PCT" "$(( CUR / 1073741824 ))" "$(( SRC_SIZE / 1073741824 ))" > "$PROGRESS_FILE"
+            printf '\rds4-ram: copying model to RAM: %d%% (%d/%d GiB)...' \
+                "$PCT" "$(( CUR / 1073741824 ))" "$(( SRC_SIZE / 1073741824 ))" >&2
         done
     ) &
     PROGRESS_PID=$!
@@ -56,6 +69,7 @@ if [ ! -f "$DST" ] || [ "$(stat -c%s "$DST")" != "$SRC_SIZE" ]; then
     wait "$PROGRESS_PID" 2>/dev/null || true
     PROGRESS_PID=""
     rm -f "$PROGRESS_FILE"
+    printf '\n' >&2
     mv "$DST.tmp" "$DST"
 fi
 
