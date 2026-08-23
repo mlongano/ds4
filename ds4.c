@@ -17864,7 +17864,7 @@ static bool metal_graph_alloc_raw_cap(
         ds4_gpu_should_use_managed_kv_cache(kv_cache_bytes, context_bytes) != 0;
     if (managed_kv_cache) {
         /*
-         * CUDA device allocations are fastest, but a million-token KV cache is
+         * Device allocations are fastest, but a million-token KV cache is
          * large enough to starve DGX Spark's unified CPU/GPU memory once the
          * model cache and driver allocations are present.  For this one
          * long-lived cache class, managed memory restores the old demand-paged
@@ -17872,7 +17872,7 @@ static bool metal_graph_alloc_raw_cap(
          * turning memory pressure into a machine-wide lockup.
          */
         fprintf(stderr,
-                "ds4: CUDA using managed KV cache for ctx=%u "
+                "ds4: accelerator using managed KV cache for ctx=%u "
                 "(kv cache %.2f GiB, context buffers %.2f GiB); "
                 "this may degrade performance but is needed for very large contexts\n",
                 ctx_size,

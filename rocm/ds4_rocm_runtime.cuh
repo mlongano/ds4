@@ -1627,6 +1627,137 @@ static int cuda_stream_expert_slab_grow(uint64_t slot_bytes) {
     return 0;
 }
 
+static int cuda_stream_expert_ptr_in_slab(
+        const char *ptr,
+        const cuda_stream_expert_slab &slab) {
+    if (!ptr || !slab.base || slab.bytes == 0) return 0;
+    const uintptr_t p = (uintptr_t)ptr;
+    const uintptr_t base = (uintptr_t)slab.base;
+    return p >= base && (uint64_t)(p - base) < slab.bytes;
+}
+
+static size_t cuda_stream_expert_slab_trim_victim(void) {
+    size_t victim = (size_t)-1;
+    uint32_t best_live = UINT32_MAX;
+    uint64_t best_newest_use = UINT64_MAX;
+    for (size_t si = 0; si < g_stream_expert_slabs.size(); si++) {
+        const cuda_stream_expert_slab &slab = g_stream_expert_slabs[si];
+        uint32_t live = 0;
+        uint64_t newest_use = 0;
+        for (const cuda_stream_resident_expert &e :
+             g_stream_resident_experts) {
+            if (!e.pooled ||
+                !cuda_stream_expert_ptr_in_slab(e.base, slab)) {
+                continue;
+            }
+            live++;
+            if (e.last_used > newest_use) newest_use = e.last_used;
+        }
+        if (victim == (size_t)-1 || live < best_live ||
+            (live == best_live && newest_use < best_newest_use)) {
+            victim = si;
+            best_live = live;
+            best_newest_use = newest_use;
+        }
+    }
+    return victim;
+}
+
+static int cuda_stream_expert_slabs_trim_for_free_bytes(
+        uint64_t target_free_bytes,
+        const char *what) {
+    size_t free_b = 0;
+    size_t total_b = 0;
+    if (cudaMemGetInfo(&free_b, &total_b) != cudaSuccess) {
+        (void)cudaGetLastError();
+        return 0;
+    }
+    (void)total_b;
+    if ((uint64_t)free_b >= target_free_bytes) return 1;
+    if (!cuda_stream_resident_reclaim_wait(
+                "streaming expert slab trim")) {
+        return 0;
+    }
+
+    const uint64_t free_before = (uint64_t)free_b;
+    uint64_t slab_bytes_freed = 0;
+    uint64_t experts_evicted = 0;
+    uint32_t slabs_freed = 0;
+    while ((uint64_t)free_b < target_free_bytes &&
+           !g_stream_expert_slabs.empty()) {
+        const size_t victim = cuda_stream_expert_slab_trim_victim();
+        if (victim == (size_t)-1) break;
+        const cuda_stream_expert_slab slab =
+            g_stream_expert_slabs[victim];
+
+        for (size_t i = g_stream_resident_experts.size(); i > 0; i--) {
+            const cuda_stream_resident_expert &e =
+                g_stream_resident_experts[i - 1u];
+            if (!e.pooled ||
+                !cuda_stream_expert_ptr_in_slab(e.base, slab)) {
+                continue;
+            }
+            if (!cuda_stream_resident_evict_at(i - 1u)) return 0;
+            experts_evicted++;
+        }
+
+        cudaError_t err = cudaFree(slab.base);
+        if (err != cudaSuccess) {
+            fprintf(stderr,
+                    DS4_GPU_LOG_PREFIX "streaming expert slab trim failed "
+                    "for %s (%.2f GiB): %s\n",
+                    what ? what : "streaming model spans",
+                    (double)slab.bytes / 1073741824.0,
+                    cudaGetErrorString(err));
+            (void)cudaGetLastError();
+            return 0;
+        }
+
+        size_t keep = 0;
+        for (char *slot : g_stream_expert_free_slots) {
+            if (!cuda_stream_expert_ptr_in_slab(slot, slab)) {
+                g_stream_expert_free_slots[keep++] = slot;
+            }
+        }
+        g_stream_expert_free_slots.resize(keep);
+        const uint64_t slab_slots = g_stream_expert_slot_bytes == 0 ? 0 :
+            slab.bytes / g_stream_expert_slot_bytes;
+        if (slab_slots >= g_stream_expert_slot_count) {
+            g_stream_expert_slot_count = 0;
+        } else {
+            g_stream_expert_slot_count -= (uint32_t)slab_slots;
+        }
+        const size_t last = g_stream_expert_slabs.size() - 1u;
+        if (victim != last) {
+            g_stream_expert_slabs[victim] = g_stream_expert_slabs[last];
+        }
+        g_stream_expert_slabs.pop_back();
+        slab_bytes_freed += slab.bytes;
+        slabs_freed++;
+
+        if (cudaMemGetInfo(&free_b, &total_b) != cudaSuccess) {
+            (void)cudaGetLastError();
+            break;
+        }
+    }
+
+    if (slabs_freed != 0) {
+        fprintf(stderr,
+                DS4_GPU_LOG_PREFIX "trimmed %u streaming expert slab%s "
+                "(%.2f GiB, %llu experts) for %s; free %.2f -> %.2f GiB, "
+                "target %.2f GiB\n",
+                slabs_freed,
+                slabs_freed == 1u ? "" : "s",
+                (double)slab_bytes_freed / 1073741824.0,
+                (unsigned long long)experts_evicted,
+                what ? what : "streaming model spans",
+                (double)free_before / 1073741824.0,
+                (double)free_b / 1073741824.0,
+                (double)target_free_bytes / 1073741824.0);
+    }
+    return (uint64_t)free_b >= target_free_bytes;
+}
+
 static char *cuda_stream_expert_slot_acquire(
         uint64_t bytes,
         uint32_t layer,
@@ -5508,11 +5639,13 @@ static uint64_t cuda_model_cache_limit_bytes(void) {
 }
 
 static int cuda_stream_model_cache_prepare_memory(
-        uint64_t request_bytes,
+        uint64_t allocation_bytes,
         const char *what) {
-    if (!g_ssd_streaming_mode || request_bytes == 0 || g_q8_f16_bytes == 0) {
-        return 1;
-    }
+    if (!g_ssd_streaming_mode || allocation_bytes == 0) return 1;
+
+    const uint64_t reserve = cuda_stream_resident_free_reserve_bytes();
+    if (allocation_bytes > UINT64_MAX - reserve) return 0;
+    const uint64_t target_free = allocation_bytes + reserve;
 
     size_t free_b = 0;
     size_t total_b = 0;
@@ -5521,27 +5654,45 @@ static int cuda_stream_model_cache_prepare_memory(
         return 1;
     }
     (void)total_b;
-    const uint64_t reserve = cuda_stream_resident_free_reserve_bytes();
-    const uint64_t free_bytes = (uint64_t)free_b;
-    if (free_bytes >= reserve && request_bytes <= free_bytes - reserve) {
-        return 1;
+    if ((uint64_t)free_b >= target_free) return 1;
+
+    if (g_q8_f16_bytes != 0) {
+        if (!cuda_ok(cudaDeviceSynchronize(),
+                     "streaming model cache q8 fp16 release sync")) {
+            return 0;
+        }
+        fprintf(stderr,
+                DS4_GPU_LOG_PREFIX "releasing %.2f GiB q8 fp16 cache for %s "
+                "(allocation=%.2f GiB free=%.2f GiB reserve=%.2f GiB)\n",
+                (double)g_q8_f16_bytes / 1073741824.0,
+                what ? what : "streaming model spans",
+                (double)allocation_bytes / 1073741824.0,
+                (double)free_b / 1073741824.0,
+                (double)reserve / 1073741824.0);
+        cuda_q8_f16_cache_release_all();
+        g_q8_f16_budget_notice_printed = 0;
+        if (cudaMemGetInfo(&free_b, &total_b) != cudaSuccess) {
+            (void)cudaGetLastError();
+            return 1;
+        }
+        if ((uint64_t)free_b >= target_free) return 1;
     }
 
-    if (!cuda_ok(cudaDeviceSynchronize(),
-                 "streaming model cache q8 fp16 release sync")) {
+    if (cuda_stream_expert_slabs_trim_for_free_bytes(target_free, what)) {
+        return 1;
+    }
+    if (cudaMemGetInfo(&free_b, &total_b) != cudaSuccess) {
+        (void)cudaGetLastError();
         return 0;
     }
     fprintf(stderr,
-            DS4_GPU_LOG_PREFIX "releasing %.2f GiB q8 fp16 cache for %s "
-            "(request=%.2f GiB free=%.2f GiB reserve=%.2f GiB)\n",
-            (double)g_q8_f16_bytes / 1073741824.0,
+            DS4_GPU_LOG_PREFIX "insufficient memory for %s after cache trim "
+            "(allocation=%.2f GiB free=%.2f GiB reserve=%.2f GiB)\n",
             what ? what : "streaming model spans",
-            (double)request_bytes / 1073741824.0,
-            (double)free_bytes / 1073741824.0,
+            (double)allocation_bytes / 1073741824.0,
+            (double)free_b / 1073741824.0,
             (double)reserve / 1073741824.0);
-    cuda_q8_f16_cache_release_all();
-    g_q8_f16_budget_notice_printed = 0;
-    return 1;
+    return 0;
 }
 
 static uint64_t cuda_model_arena_chunk_bytes(uint64_t need) {
@@ -5582,7 +5733,15 @@ static char *cuda_model_arena_alloc(uint64_t bytes, const char *what) {
     const uint64_t limit = cuda_model_cache_limit_bytes();
     if (g_model_range_bytes > limit || aligned > limit - g_model_range_bytes) return NULL;
 
-    const uint64_t chunk = cuda_model_arena_chunk_bytes(aligned);
+    uint64_t chunk = cuda_model_arena_chunk_bytes(aligned);
+    if (!cuda_stream_model_cache_prepare_memory(chunk, what)) {
+        if (chunk == aligned ||
+            !cuda_stream_model_cache_prepare_memory(aligned, what)) {
+            g_model_cache_full = 1;
+            return NULL;
+        }
+        chunk = aligned;
+    }
     void *dev = NULL;
     cudaError_t err = cudaMalloc(&dev, (size_t)chunk);
     if (err != cudaSuccess) {
@@ -6006,6 +6165,22 @@ static uint64_t cuda_managed_kv_reserve_bytes(uint64_t total_bytes) {
 extern "C" int ds4_gpu_should_use_managed_kv_cache(uint64_t kv_cache_bytes, uint64_t context_bytes) {
     if (kv_cache_bytes == 0) return 0;
 
+    /* On discrete ROCm devices, a large streaming KV allocation should not
+     * reserve all of its VRAM before the session has produced those rows.
+     * Managed pages let the resident expert cache use that otherwise-idle
+     * capacity and migrate KV pages on demand as the context grows. */
+    const uint64_t elastic_streaming_kv = 2ull * 1073741824ull;
+    if (g_ssd_streaming_mode && kv_cache_bytes >= elastic_streaming_kv) {
+        int dev = 0;
+        cudaDeviceProp prop;
+        if (cudaGetDevice(&dev) == cudaSuccess &&
+            cudaGetDeviceProperties(&prop, dev) == cudaSuccess &&
+            !prop.integrated) {
+            return 1;
+        }
+        (void)cudaGetLastError();
+    }
+
     /* Very large KV caches are where device-only cudaMalloc() can make a
      * unified-memory machine unresponsive.  Managed memory restores the old
      * demand-paged behavior for this one long-lived allocation class only. */
@@ -6198,10 +6373,6 @@ extern "C" int ds4_gpu_set_model_map_range(const void *model_map, uint64_t model
             }
             cuda_model_range_release_ranges_only();
         }
-        if (!cuda_stream_model_cache_prepare_memory(map_size,
-                                                    "streaming model range")) {
-            return 0;
-        }
         if (!cuda_model_range_ptr(model_map, map_offset, map_size, "stream_range")) return 0;
         return cuda_model_range_is_cached(model_map, map_offset, map_size);
     }
@@ -6276,10 +6447,6 @@ extern "C" int ds4_gpu_set_model_map_spans(
                 return 0;
             }
             cuda_model_range_release_ranges_only();
-        }
-        if (!cuda_stream_model_cache_prepare_memory(request_bytes,
-                                                    "streaming model spans")) {
-            return 0;
         }
         for (uint32_t i = 0; i < count; i++) {
             if (!cuda_model_range_ptr(model_map, offsets[i], sizes[i], "stream_span")) return 0;
