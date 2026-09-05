@@ -131,8 +131,24 @@ struct cuda_stream_resident_expert {
     char *down;
     uint64_t bytes;
     uint64_t last_used;
+    uint32_t pin_count;
     int pooled;
 };
+
+struct cuda_stream_selected_pin_set {
+    int active;
+    const void *model_map;
+    uint32_t layer;
+    uint32_t n_selected;
+    uint64_t gate_offset;
+    uint64_t up_offset;
+    uint64_t down_offset;
+    uint64_t gate_expert_bytes;
+    uint64_t down_expert_bytes;
+    int32_t selected_ids[DS4_ROCM_N_EXPERT_USED];
+};
+
+static cuda_stream_selected_pin_set g_stream_selected_pins;
 
 /*
  * Streamed experts share one size class per model (2*gate + down bytes), so
@@ -669,6 +685,7 @@ static void cuda_stream_resident_cache_release(void) {
     }
     g_stream_resident_experts.clear();
     g_stream_resident_index.clear();
+    memset(&g_stream_selected_pins, 0, sizeof(g_stream_selected_pins));
     g_stream_resident_bytes = 0;
     g_stream_resident_clock = 0;
     for (cuda_stream_expert_slab &slab : g_stream_expert_slabs) {
@@ -1454,7 +1471,8 @@ static int cuda_stream_resident_find(
 }
 
 static int cuda_stream_resident_evict_at(size_t idx) {
-    if (idx >= g_stream_resident_experts.size()) return 0;
+    if (idx >= g_stream_resident_experts.size() ||
+        g_stream_resident_experts[idx].pin_count != 0) return 0;
     if (!cuda_stream_resident_reclaim_wait(
                 "streaming resident expert cache eviction")) {
         return 0;
@@ -1486,6 +1504,76 @@ static int cuda_stream_resident_evict_at(size_t idx) {
     return 1;
 }
 
+static void cuda_stream_selected_unpin_entries(void) {
+    if (!g_stream_selected_pins.active) return;
+    for (uint32_t i = 0; i < g_stream_selected_pins.n_selected; i++) {
+        const int idx = cuda_stream_resident_find(
+                g_stream_selected_pins.model_map,
+                g_stream_selected_pins.layer,
+                g_stream_selected_pins.selected_ids[i],
+                g_stream_selected_pins.gate_offset,
+                g_stream_selected_pins.up_offset,
+                g_stream_selected_pins.down_offset,
+                g_stream_selected_pins.gate_expert_bytes,
+                g_stream_selected_pins.down_expert_bytes);
+        if (idx >= 0) {
+            cuda_stream_resident_expert &entry =
+                g_stream_resident_experts[(size_t)idx];
+            if (entry.pin_count != 0) entry.pin_count--;
+        }
+    }
+    memset(&g_stream_selected_pins, 0, sizeof(g_stream_selected_pins));
+}
+
+static int cuda_stream_selected_pin_entries(
+        const void *model_map,
+        uint32_t layer,
+        const int32_t *selected_ids,
+        uint32_t n_selected,
+        uint64_t gate_offset,
+        uint64_t up_offset,
+        uint64_t down_offset,
+        uint64_t gate_expert_bytes,
+        uint64_t down_expert_bytes) {
+    if (g_stream_selected_pins.active || !selected_ids ||
+        n_selected == 0 || n_selected > DS4_ROCM_N_EXPERT_USED) return 0;
+    uint32_t pinned = 0;
+    for (; pinned < n_selected; pinned++) {
+        const int idx = cuda_stream_resident_find(
+                model_map, layer, selected_ids[pinned],
+                gate_offset, up_offset, down_offset,
+                gate_expert_bytes, down_expert_bytes);
+        if (idx < 0) break;
+        g_stream_resident_experts[(size_t)idx].pin_count++;
+    }
+    if (pinned != n_selected) {
+        while (pinned != 0) {
+            pinned--;
+            const int idx = cuda_stream_resident_find(
+                    model_map, layer, selected_ids[pinned],
+                    gate_offset, up_offset, down_offset,
+                    gate_expert_bytes, down_expert_bytes);
+            if (idx >= 0 &&
+                g_stream_resident_experts[(size_t)idx].pin_count != 0) {
+                g_stream_resident_experts[(size_t)idx].pin_count--;
+            }
+        }
+        return 0;
+    }
+    g_stream_selected_pins.active = 1;
+    g_stream_selected_pins.model_map = model_map;
+    g_stream_selected_pins.layer = layer;
+    g_stream_selected_pins.n_selected = n_selected;
+    g_stream_selected_pins.gate_offset = gate_offset;
+    g_stream_selected_pins.up_offset = up_offset;
+    g_stream_selected_pins.down_offset = down_offset;
+    g_stream_selected_pins.gate_expert_bytes = gate_expert_bytes;
+    g_stream_selected_pins.down_expert_bytes = down_expert_bytes;
+    memcpy(g_stream_selected_pins.selected_ids, selected_ids,
+           (size_t)n_selected * sizeof(selected_ids[0]));
+    return 1;
+}
+
 static int cuda_stream_resident_evict_one(
         uint32_t layer,
         const int32_t *selected_ids,
@@ -1496,7 +1584,7 @@ static int cuda_stream_resident_evict_one(
         for (size_t i = 0; i < g_stream_resident_experts.size(); i++) {
             const cuda_stream_resident_expert &e =
                 g_stream_resident_experts[i];
-            if (e.layer > layer ||
+            if (e.pin_count != 0 || e.layer > layer ||
                 cuda_stream_selected_is_current(e,
                                                 layer,
                                                 selected_ids,
@@ -1515,7 +1603,8 @@ static int cuda_stream_resident_evict_one(
     oldest = UINT64_MAX;
     for (size_t i = 0; i < g_stream_resident_experts.size(); i++) {
         const cuda_stream_resident_expert &e = g_stream_resident_experts[i];
-        if (cuda_stream_selected_is_current(e, layer, selected_ids, n_selected)) {
+        if (e.pin_count != 0 ||
+            cuda_stream_selected_is_current(e, layer, selected_ids, n_selected)) {
             continue;
         }
         if (e.last_used < oldest) {
@@ -1664,6 +1753,7 @@ static size_t cuda_stream_expert_slab_trim_victim(void) {
         const cuda_stream_expert_slab &slab = g_stream_expert_slabs[si];
         uint32_t live = 0;
         uint64_t newest_use = 0;
+        bool pinned = false;
         for (const cuda_stream_resident_expert &e :
              g_stream_resident_experts) {
             if (!e.pooled ||
@@ -1671,8 +1761,10 @@ static size_t cuda_stream_expert_slab_trim_victim(void) {
                 continue;
             }
             live++;
+            if (e.pin_count != 0) pinned = true;
             if (e.last_used > newest_use) newest_use = e.last_used;
         }
+        if (pinned) continue;
         if (victim == (size_t)-1 || live < best_live ||
             (live == best_live && newest_use < best_newest_use)) {
             victim = si;
@@ -4250,6 +4342,7 @@ static int cuda_stream_selected_load(
     if (!cuda_stream_selected_reuse_wait("streaming selected cache reuse")) {
         return 0;
     }
+    cuda_stream_selected_unpin_entries();
     if (!cuda_stream_selected_ensure_buffers(gate_bytes, down_bytes)) return 0;
     if (!cuda_stream_selected_ensure_stream()) return 0;
     cuda_stream_selected_cache_header(model_map,
@@ -4406,6 +4499,20 @@ static int cuda_stream_selected_load(
                 return 0;
             }
         }
+    }
+
+    if (!cuda_stream_selected_pin_entries(model_map,
+                                          layer,
+                                          selected_ids,
+                                          n_selected,
+                                          gate_offset,
+                                          up_offset,
+                                          down_offset,
+                                          gate_expert_bytes,
+                                          down_expert_bytes)) {
+        cuda_stream_read_jobs_free(read_jobs, read_job_count);
+        cuda_stream_resident_cache_release();
+        return 0;
     }
 
     if (resident_mask != 0 && missing_mask == 0) {
