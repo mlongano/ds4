@@ -31441,11 +31441,16 @@ static bool metal_graph_encode_layer_ffn_batch(
 #ifdef DS4_ROCM_BUILD
     rocm_graph_batch_selected_async_load rocm_batch_selected_async = {0};
     bool rocm_batch_selected_async_started = false;
+    /* Model-span allocation during shared-expert work can trim a slab while
+     * its selected-expert SDMA upload is still in flight. Keep the safe path
+     * as the default until uploaded slabs have an explicit lifetime pin. */
     const bool rocm_batch_selected_shared_overlap =
         ok &&
         g->ssd_streaming &&
         !g->quality &&
         n_tokens > 1 &&
+        getenv("DS4_ROCM_ENABLE_STREAMING_PREFILL_BATCH_SELECTED_LOAD") != NULL &&
+        getenv("DS4_ROCM_DISABLE_STREAMING_PREFILL_BATCH_SELECTED_LOAD") == NULL &&
         DS4_N_EXPERT_USED == 6 &&
         !rocm_graph_stream_prefill_full_layer_enabled(g, layer, il, n_tokens) &&
         layer->ffn_gate_exps->type == DS4_TENSOR_IQ2_XXS &&
@@ -60488,6 +60493,28 @@ static bool ds4_engine_configure_streaming_auto_cache(ds4_engine *e) {
 
     uint32_t cache_experts = plan.cache_experts;
     uint64_t effective_cache_bytes = plan.effective_cache_bytes;
+#ifdef DS4_ROCM_BUILD
+    /* The generic 65% plan underfills the expert cache on a 32 GiB R9700.
+     * Eighteen GiB leaves the measured 262K KV and graph headroom intact. */
+    if (DS4_MODEL_VARIANT == DS4_VARIANT_FLASH &&
+        e->backend == DS4_BACKEND_CUDA &&
+        recommended >= 30ull * 1073741824ull &&
+        recommended <= 36ull * 1073741824ull) {
+        const uint64_t target_bytes = 18ull * 1073741824ull;
+        uint64_t target_experts = target_bytes / per_expert_bytes;
+        if (target_experts > max_model_experts) {
+            target_experts = max_model_experts;
+        }
+        cache_experts = target_experts > UINT32_MAX ?
+            UINT32_MAX : (uint32_t)target_experts;
+        effective_cache_bytes =
+            (uint64_t)cache_experts * per_expert_bytes;
+        plan.effective_cache_bytes = effective_cache_bytes;
+        plan.model_target_bytes =
+            effective_cache_bytes <= UINT64_MAX - non_routed_bytes ?
+            non_routed_bytes + effective_cache_bytes : UINT64_MAX;
+    }
+#endif
     const bool glm_full_layer_reserve =
         DS4_MODEL_FAMILY == DS4_MODEL_FAMILY_GLM_DSA &&
         ds4_backend_supports_glm_streaming_full_layers(e->backend);

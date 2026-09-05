@@ -1527,6 +1527,21 @@ static int cuda_stream_resident_evict_one(
     return cuda_stream_resident_evict_at(victim);
 }
 
+static int cuda_stream_uses_32g_discrete_profile(void) {
+    if (!g_ssd_streaming_mode || g_glm_model) return 0;
+    size_t free_b = 0;
+    size_t total_b = 0;
+    const cudaError_t err = cudaMemGetInfo(&free_b, &total_b);
+    if (err != cudaSuccess) {
+        (void)cudaGetLastError();
+        return 0;
+    }
+    (void)free_b;
+    const uint64_t gib = 1073741824ull;
+    return (uint64_t)total_b >= 30ull * gib &&
+           (uint64_t)total_b <= 36ull * gib;
+}
+
 static uint64_t cuda_stream_resident_free_reserve_bytes(void) {
     /*
      * Headroom kept free on the (unified-memory) device while growing the
@@ -1538,6 +1553,11 @@ static uint64_t cuda_stream_resident_free_reserve_bytes(void) {
     if (cached < 0) {
         const char *env = getenv("DS4_ROCM_STREAM_FREE_RESERVE_GB");
         uint64_t gib = 16;
+        if ((!env || !env[0]) && cuda_stream_uses_32g_discrete_profile()) {
+            /* R9700 needs decode scratch headroom, not a second model-sized
+             * reserve. The larger reserve starves the resident expert cache. */
+            gib = 2;
+        }
         if (env && env[0]) {
             char *end = NULL;
             errno = 0;
@@ -2231,7 +2251,17 @@ static uint32_t cuda_stream_read_worker_count(void) {
             return (uint32_t)v;
         }
     }
-    return DS4_ROCM_STREAM_READ_DEFAULT_WORKERS;
+
+    static uint32_t automatic_workers = 0;
+    if (automatic_workers != 0) return automatic_workers;
+
+    automatic_workers = DS4_ROCM_STREAM_READ_DEFAULT_WORKERS;
+    if (cuda_stream_uses_32g_discrete_profile()) {
+        /* Four RAM-backed readers beat wider pools during token decode and
+         * avoid needless upload contention. */
+        automatic_workers = 4u;
+    }
+    return automatic_workers;
 }
 
 static void cuda_stream_read_upload_streams_destroy(void) {
@@ -5630,9 +5660,15 @@ static uint64_t cuda_model_cache_limit_bytes(void) {
         return fallback;
     }
     (void)free_b;
+    const uint64_t gib = 1073741824ull;
     uint64_t limit = (uint64_t)total_b / 3ull;
-    const uint64_t min_limit = 8ull * 1073741824ull;
-    const uint64_t max_limit = 48ull * 1073741824ull;
+    if (!g_glm_model &&
+        (uint64_t)total_b >= 30ull * gib &&
+        (uint64_t)total_b <= 36ull * gib) {
+        limit = 16ull * gib;
+    }
+    const uint64_t min_limit = 8ull * gib;
+    const uint64_t max_limit = 48ull * gib;
     if (limit < min_limit) limit = min_limit;
     if (limit > max_limit) limit = max_limit;
     return limit;
