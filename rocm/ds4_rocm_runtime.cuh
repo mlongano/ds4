@@ -1,4 +1,8 @@
 #include "ds4_rocm_stream_policy.h"
+#if defined(__linux__)
+#include <sys/vfs.h>
+#include <linux/magic.h>
+#endif
 
 static const void *g_model_host_base;
 static const char *g_model_device_base;
@@ -6,6 +10,7 @@ static uint64_t g_model_registered_size;
 static int g_model_device_owned;
 static int g_model_range_mapping_supported = 1;
 static int g_model_fd = -1;
+static int g_model_fd_tmpfs;
 static const void *g_model_fd_host_base;
 static int g_model_direct_fd = -1;
 static uint64_t g_model_direct_align = 1;
@@ -6062,6 +6067,38 @@ static char *cuda_model_arena_alloc(uint64_t bytes, const char *what) {
     return (char *)dev;
 }
 
+static int cuda_model_range_upload_parallel(
+        char *dev, const void *model_map, uint64_t offset, uint64_t bytes) {
+    /* The caller allocates the arena before dispatch. Wait for all worker SDMA
+     * before reusing stack jobs or publishing this range. No arena allocations
+     * or trims may run while these jobs own their destination addresses. */
+    uint64_t copied = 0;
+    while (copied < bytes) {
+        cuda_stream_read_job jobs[64] = {0};
+        uint32_t count = 0;
+        while (count < 64u && copied < bytes) {
+            const uint64_t remaining = bytes - copied;
+            const uint64_t n = remaining < 8ull * 1048576ull ?
+                               remaining : 8ull * 1048576ull;
+            jobs[count].dst = dev + copied;
+            jobs[count].offset = offset + copied;
+            jobs[count].bytes = n;
+            copied += n;
+            count++;
+        }
+        /* Failure also drains dispatched copies; do not publish partial data. */
+        if (!cuda_stream_read_jobs_parallel(jobs, count)) return 0;
+        for (uint32_t i = 0; i < count; i++) {
+            if (!jobs[i].uploaded) return 0;
+            cuda_model_drop_file_pages(jobs[i].offset, jobs[i].bytes);
+            cuda_model_discard_source_pages(model_map, g_model_registered_size,
+                                            jobs[i].offset, jobs[i].bytes);
+        }
+        cuda_model_load_progress_note(g_model_range_bytes + copied);
+    }
+    return 1;
+}
+
 static const char *cuda_model_range_ptr_from_fd(
         const void *model_map,
         uint64_t offset,
@@ -6082,10 +6119,16 @@ static const char *cuda_model_range_ptr_from_fd(
         return cuda_model_ptr(model_map, offset);
     }
 
+    const bool parallel = ds4_rocm_stream_bulk_policy(
+        g_ssd_streaming_mode, g_glm_model, cuda_stream_r9700_profile(),
+        g_model_fd_tmpfs, bytes,
+        g_stream_selected_pending.active || g_stream_batch_selected_pending.active,
+        getenv("DS4_ROCM_ENABLE_MODEL_PARALLEL_READ"),
+        getenv("DS4_ROCM_DISABLE_MODEL_PARALLEL_READ"));
     const uint64_t chunk = cuda_model_copy_chunk_bytes();
     const uint64_t stage_bytes =
         chunk + (g_model_direct_align > 1 ? g_model_direct_align : 1);
-    if (!cuda_model_stage_pool_alloc(stage_bytes)) return NULL;
+    if (!parallel && !cuda_model_stage_pool_alloc(stage_bytes)) return NULL;
 
     char *dev = cuda_model_arena_alloc(bytes, what);
     if (!dev) {
@@ -6100,6 +6143,13 @@ static const char *cuda_model_range_ptr_from_fd(
         return cuda_model_ptr(model_map, offset);
     }
     cudaError_t err = cudaSuccess;
+    if (parallel) {
+        if (!cuda_model_range_upload_parallel(dev, model_map, offset, bytes)) return NULL;
+        g_model_ranges.push_back({model_map, offset, bytes, dev, NULL, NULL, 0, 0, 1});
+        g_model_range_by_offset[offset] = g_model_ranges.size() - 1u;
+        g_model_range_bytes += bytes;
+        return dev;
+    }
 
     uint64_t copied = 0;
     uint64_t chunk_idx = 0;
@@ -6802,6 +6852,11 @@ extern "C" int ds4_gpu_set_model_map_spans(
 
 extern "C" int ds4_gpu_set_model_fd(int fd) {
     g_model_fd = fd;
+    g_model_fd_tmpfs = 0;
+#if defined(__linux__)
+    struct statfs fs;
+    if (fd >= 0 && fstatfs(fd, &fs) == 0) g_model_fd_tmpfs = fs.f_type == TMPFS_MAGIC;
+#endif
     g_model_fd_host_base = g_model_host_base;
     g_model_file_size = 0;
     if (g_model_direct_fd >= 0) {

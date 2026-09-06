@@ -22,6 +22,23 @@ static inline int ds4_rocm_stream_r9700_hardware(
            total_bytes >= 30ull * gib && total_bytes <= 36ull * gib;
 }
 
+/* Small prompts keep the original kernel unless explicitly exercising tails. */
+static inline int ds4_rocm_stream_pair_policy(
+        int streaming, int glm, int r9700, uint64_t tokens,
+        const char *enable, const char *disable) {
+    return streaming && !glm && tokens >= 32u &&
+        ds4_rocm_stream_option(r9700 && tokens >= 256u, enable, disable);
+}
+
+/* Do not change disk I/O scheduling automatically. Active selected uploads own
+ * the worker pool and retain their original uploader until their wait ends. */
+static inline int ds4_rocm_stream_bulk_policy(
+        int streaming, int glm, int r9700, int tmpfs, uint64_t bytes,
+        int selected_active, const char *enable, const char *disable) {
+    return streaming && !glm && bytes >= 16ull * 1048576ull && !selected_active &&
+        ds4_rocm_stream_option(r9700 && tmpfs, enable, disable);
+}
+
 /* Keep automatic arithmetic changes within the measured hardware/model pair.
  * An explicit enable may select another device, never another quantization. */
 static inline int ds4_rocm_stream_direct_policy(

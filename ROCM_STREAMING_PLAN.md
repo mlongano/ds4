@@ -1,6 +1,6 @@
 # R9700 streaming improvement plan
 
-Baseline: `78dce0e`, RAM-backed Vision-Exp IQ2_XXS gate / Q2_K down,
+Initial baseline: `78dce0e`, RAM-backed Vision-Exp IQ2_XXS gate / Q2_K down,
 262144 allocated tokens, 4096-token prefill chunks, managed KV.
 Keep the server stopped. Do not push or alter unrelated files.
 
@@ -133,11 +133,139 @@ Local evidence for this implementation is under `/tmp/ds4-next-perf/` in
 passed all short/long logprob, two-turn and image checks in `final-verified`.
 These temporary artifacts are not committed.
 
-### Remaining work
+### Remaining work after the initial decode changes
 
-The larger prefill/first-token opportunity is still open. Separate persistent
-dense allocations from temporary prefill ranges before changing arena eviction
-or scratch release. Add batch-specific pins before enabling prefill overlap.
-Test cancellation/recovery and long-context continuation beyond 16K before
-expanding the performance claims. Expert residency changes need new traces
-with the revised transfer schedule; no new cache-size defaults were selected.
+Persistent dense allocations and temporary prefill ranges still share arenas.
+Separate their ownership before changing arena eviction or scratch release.
+Add batch-specific pins before enabling prefill overlap. Test cancellation,
+recovery and long-context continuation beyond 16K before expanding the claims.
+No new cache-size defaults were selected.
+
+## Completed prefill and TTFT follow-up
+
+Reference binaries for this phase were saved from `df7cc08` in
+`/tmp/ds4-deeper-perf/` before editing. The RAM-backed Vision-Exp model,
+262144 context allocation, managed KV, 4096-token chunks and cache budgets
+remain unchanged. The service stayed stopped; no production settings changed.
+
+### Accepted changes
+
+- **Parallel model-span uploads.** Large prefill/static spans now use the
+  existing four-worker read/upload pool in bounded batches of up to 64 jobs,
+  each at most 8 MiB. Previously these reads used the single caller thread.
+  Allocate the destination first, wait for every upload, then publish the
+  range. Failed batches also drain before returning. Selected-expert uploads
+  retain their separate uploader while they own the pool.
+- **Paired-row Q8 prefill.** Two output rows reuse each LDS activation load.
+  The selected shape is 16 tokens, 32 rows and 512 threads using 32 KiB LDS.
+  The original per-lane FP32 accumulation and reduction order are retained.
+  Smaller launch tiles alone were slower and were rejected. Exploratory
+  tile/row/block switches were removed.
+
+Automatic paired-row selection requires DeepSeek streaming, discrete gfx1201
+with 30–36 GiB VRAM, and at least 256 tokens. Automatic bulk uploads use the
+same hardware/model gates but are independent of token count. They require a
+tmpfs model descriptor and a span of at least 16 MiB. Disk-backed
+model-span I/O retains its existing default. Neither change enables prefill
+shared/upload overlap or changes KV/cache ownership.
+
+Independent tests before combining the changes:
+
+| Experiment | 8K prefill reference → candidate t/s | 16K prefill reference → candidate t/s |
+|---|---:|---:|
+| Paired rows only, median of 3 | 109.13 → 113.83 | 109.23 → 114.81 |
+| Parallel spans only, median of 3 | 109.19 → 161.76 | 107.97 → 157.89 |
+
+An initial single parallel-span pair had 10.39 → 9.70 steady decode t/s.
+That slowdown did not reproduce in six later isolated pairs or six combined
+pairs. Its cause is not established; it is not attributed to swapping without
+evidence. All runs remain in the artifacts.
+
+### Final automatic-default results
+
+Medians of three alternating reference/candidate pairs, 128 generated tokens:
+
+| Measurement | Reference | Candidate |
+|---|---:|---:|
+| 8K prefill t/s | 109.82 | 174.07 |
+| 16K prefill t/s | 108.70 | 171.06 |
+| 8K first-decode ms | 2259.299 | 1092.376 |
+| 16K first-decode ms | 2255.931 | 1096.503 |
+| 8K steady decode t/s | 10.45 | 10.44 |
+| 16K steady decode t/s | 9.75 | 9.78 |
+| 8K overall generation t/s | 8.86 | 9.65 |
+| 16K overall generation t/s | 8.35 | 9.09 |
+
+Prefill improved 58.5% at 8K and 57.4% at 16K. There is no meaningful
+steady-decode gain. Overall generation improves because first decode is shorter.
+
+The separate `--ttft` test timestamps process launch through the first generated
+stdout byte of the noninteractive `--nothink` CLI. It includes startup/model
+loading and prefill, not just first decode. It is a cold-process TTFT proxy,
+not a warm HTTP-server measurement or a cold-storage benchmark.
+
+| Cold CLI first-output time, median of 3 | Reference | Candidate |
+|---|---:|---:|
+| Short binary-search prompt | 6.205 s | 4.996 s |
+| 12583-token prompt | 135.997 s | 84.099 s |
+
+Reductions are 19.5% and 38.2%. Every TTFT pair produced identical nonempty
+stdout and completed generation. No timing samples were excluded. The final
+suite recorded 2571 swap-in pages, 96855 swap-out pages and 3981 major faults
+system-wide, using 4096-byte pages. Earlier noisy runs remain recorded: the
+paired-row 78.50 t/s sample had 1325282 swap-in pages, and an isolated baseline
+at 52.00 t/s had 6123609 swap-in pages. Tmpfs is not guaranteed physical residency.
+
+### Final validation
+
+- RDNA4 build, vision image unit test, policy tests and ASan/UBSan tests pass.
+- Exact GPU output comparisons cover partial token/row/K tiles, 1–257 token
+  boundaries and 4096-token production projection shapes. Outputs are poisoned
+  before each kernel; every value must be finite and byte-identical.
+- The actual bulk partitioning function is extracted verbatim for CPU tests.
+  Tests cover byte boundaries, multiple batches, failed batches and missing
+  upload completion. Existing delayed-copy worker tests cover read, enqueue
+  and synchronization failures. These are not real GPU fault-recovery tests.
+- Final defaults match all saved top-20 logprob JSON for the 42-, 25- and
+  12583-token prompts, each followed by 128 greedy steps. Disabling both new
+  optimizations also matches the saved baseline for 64-step continuations.
+- Two-turn and image continuations match baseline stdout. Separate scale-3
+  steering checks pass for coding logprobs and image continuation output.
+- Nine Python tests cover comparison acceptance and first-output measurement,
+  including empty output, delayed completion, large output, errors and timeout.
+
+The decode stage profiler failed with a missing-compact-experts diagnostic
+when used with selected-pointer execution. It was not used for performance
+acceptance. The prefill stage trace remains useful, but synchronized stage
+profiling is not an unprofiled end-to-end benchmark.
+
+### Diagnostics and reproduction
+
+Disable switches, with corresponding `ENABLE_...` overrides:
+
+- `DS4_ROCM_DISABLE_Q8_PREFILL_PAIR`
+- `DS4_ROCM_DISABLE_MODEL_PARALLEL_READ`
+
+Nonzero disable wins; explicit enable `0` suppresses automatic selection.
+Explicit enables allow controlled tests beyond automatic hardware/file gates.
+Bulk uploads still cannot use the pool while selected uploads own it. The
+experimental names without `ENABLE_` and the tile-sweep flags are no longer
+supported.
+
+CPU tests: `make test-rocm-streaming-unit`
+
+GPU tests after an RDNA4 build: `LD_LIBRARY_PATH=/opt/rocm/lib LIBRARY_PATH=/opt/rocm/lib make test-rocm-q8-prefill`
+
+Final correctness, vision, TTFT and performance suite:
+
+`python3 tests/rocm_streaming_regression.py --reference /tmp/ds4-deeper-perf/ds4-baseline --reference-bench /tmp/ds4-deeper-perf/ds4-bench-baseline --contexts 8192 16384 --repeats 3 --interactive --vision gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf --ttft`
+
+Evidence is in `/tmp/ds4-deeper-perf/`: `pair-real`, `parallel-map-real`,
+`parallel-repeated`, `final-combined`, `final-disabled`, `steering-final-v2`,
+synthetic kernel CSVs and build/unit logs. Binary hashes, commands, per-run
+measurements and swap deltas are retained. Temporary artifacts are not committed.
+
+Further work is separate from these accepted changes: persistent dense arena
+ownership, warm-server and KV-reuse TTFT, cancellation/snapshot recovery,
+batch-prefill pins, and correctness/performance beyond the tested contexts.
+Other GPU families and CUDA/Metal hardware were not tested in this phase.

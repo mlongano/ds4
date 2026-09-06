@@ -25,4 +25,12 @@ subprocess.run(["cc", "-std=c99", "-Wall", "-Wextra", "-Werror",
                 str(root / "tests/test_rocm_stream_policy.c"),
                 "-o", str(out / "policy")], check=True)
 subprocess.run([str(out / "policy")], timeout=10, check=True)
+start = source.index("static int cuda_model_range_upload_parallel(")
+end = source.index("static const char *cuda_model_range_ptr_from_fd(", start)
+(out / "ds4_model_upload_under_test.h").write_text(source[start:end])
+subprocess.run(["cc", "-std=c99", "-Wall", "-Wextra", "-Werror",
+                "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-g",
+                "-I", str(out), str(root / "tests/test_rocm_model_upload.c"),
+                "-o", str(out / "bulk")], check=True)
+subprocess.run([str(out / "bulk")], timeout=60, check=True)
 print("Artifacts:", out)

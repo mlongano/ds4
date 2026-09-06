@@ -494,6 +494,22 @@ static int cuda_matmul_q8_0_tensor_labeled(ds4_gpu_tensor *out, const void *mode
         return cuda_ok(cudaGetLastError(), "matmul_q8_0 f32 warp launch");
     }
     if (n_tok > 1) {
+        if ((in_dim & 31u) == 0u && ds4_rocm_stream_pair_policy(
+                g_ssd_streaming_mode, g_glm_model, cuda_stream_r9700_profile(), n_tok,
+                getenv("DS4_ROCM_ENABLE_Q8_PREFILL_PAIR"),
+                getenv("DS4_ROCM_DISABLE_Q8_PREFILL_PAIR"))) {
+            /* 16 tokens, 32 rows, 16 waves: halve LDS activation traffic
+             * without changing the FP32 accumulation or lane reduction. */
+            const dim3 grid((uint32_t)((out_dim + 31u) / 32u),
+                            (uint32_t)((n_tok + 15u) / 16u), 1u);
+            matmul_q8_0_f32_batch_sharedx_pair_rows_kernel<16u, 16u>
+                <<<grid, 512u, 32768u>>>(
+                    (float *)out->ptr,
+                    reinterpret_cast<const unsigned char *>(wptr),
+                    (const float *)x->ptr, (uint32_t)blocks,
+                    (uint32_t)out_dim, (uint32_t)n_tok, blocks * 34u);
+            return cuda_ok(cudaGetLastError(), "q8 paired-row prefill launch");
+        }
 #if (defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)) && !defined(DS4_ROCM_NO_WMMA)
         if (!g_quality_mode &&
             g_dspark_verify_mode && n_tok <= 6u &&

@@ -669,6 +669,66 @@ __global__ static void matmul_q8_0_f32_batch_sharedx_warp_rows_w32_toktile_kerne
     }
 }
 
+/* Two output rows share each LDS activation load. Keep one accumulator per
+ * token/row and the original lane-to-K mapping so reduction order is unchanged. */
+template <uint32_t TOK_TILE, uint32_t BLOCKS_TILE>
+__global__ static void matmul_q8_0_f32_batch_sharedx_pair_rows_kernel(
+        float *out, const unsigned char *w, const float *x,
+        uint32_t n_blocks, uint32_t out_dim, uint32_t n_tok,
+        uint64_t row_bytes) {
+    extern __shared__ float shx[];
+    const uint32_t tid = threadIdx.x;
+    const uint32_t lane = tid & 31u;
+    const uint32_t wave = tid >> 5u;
+    const uint32_t waves = blockDim.x >> 5u;
+    const uint32_t row0 = blockIdx.x * (2u * waves) + wave;
+    const uint32_t row1 = row0 + waves;
+    const uint32_t t0 = blockIdx.y * TOK_TILE;
+    const uint32_t in_dim = n_blocks * 32u;
+    const unsigned char *wr0 = w + (uint64_t)(row0 < out_dim ? row0 : 0) * row_bytes;
+    const unsigned char *wr1 = w + (uint64_t)(row1 < out_dim ? row1 : 0) * row_bytes;
+    float a0[TOK_TILE], a1[TOK_TILE];
+#pragma unroll
+    for (uint32_t u = 0; u < TOK_TILE; u++) a0[u] = a1[u] = 0.0f;
+    for (uint32_t b0 = 0; b0 < n_blocks; b0 += BLOCKS_TILE) {
+        const uint32_t count = n_blocks - b0 < BLOCKS_TILE ? n_blocks - b0 : BLOCKS_TILE;
+        for (uint32_t j = tid; j < TOK_TILE * BLOCKS_TILE * 32u; j += blockDim.x) {
+            const uint32_t u = j / (BLOCKS_TILE * 32u);
+            const uint32_t r = j % (BLOCKS_TILE * 32u);
+            shx[j] = t0 + u < n_tok && r / 32u < count ?
+                x[(uint64_t)(t0 + u) * in_dim + b0 * 32u + r] : 0.0f;
+        }
+        __syncthreads();
+        for (uint32_t bb = 0; bb < count; bb++) {
+            const unsigned char *brow0 = wr0 + (uint64_t)(b0 + bb) * 34u;
+            const unsigned char *brow1 = wr1 + (uint64_t)(b0 + bb) * 34u;
+            const float w0 = q8_0_scale_broadcast_w32(brow0) * (float)((const int8_t *)(brow0 + 2u))[lane];
+            const float w1 = q8_0_scale_broadcast_w32(brow1) * (float)((const int8_t *)(brow1 + 2u))[lane];
+#pragma unroll
+            for (uint32_t u = 0; u < TOK_TILE; u++) {
+                const float xv = shx[(u * BLOCKS_TILE + bb) * 32u + lane];
+                a0[u] += w0 * xv;
+                a1[u] += w1 * xv;
+            }
+        }
+        __syncthreads();
+    }
+#pragma unroll
+    for (uint32_t u = 0; u < TOK_TILE; u++) {
+        a0[u] = warp_sum_f32(a0[u]);
+        a1[u] = warp_sum_f32(a1[u]);
+    }
+    if (lane == 0u) {
+#pragma unroll
+        for (uint32_t u = 0; u < TOK_TILE; u++) {
+            if (t0 + u < n_tok) {
+                if (row0 < out_dim) out[(uint64_t)(t0 + u) * out_dim + row0] = a0[u];
+                if (row1 < out_dim) out[(uint64_t)(t0 + u) * out_dim + row1] = a1[u];
+            }
+        }
+    }
+}
+
 /* Exact q=2..5 verifier path.  These model dimensions are multiples of the
  * eight-block K tile, so vectorize the cooperative X copy and fully unroll the
  * inner tile without changing the F32 accumulation order. */

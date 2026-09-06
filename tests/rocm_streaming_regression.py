@@ -12,6 +12,7 @@ import io
 import json
 import math
 import os
+import selectors
 from pathlib import Path
 import subprocess
 import tempfile
@@ -40,6 +41,38 @@ def compare(reference, candidate):
         raise AssertionError("Reference and candidate logprob JSON differ")
 
 
+def capture_first_output(args, env, stdout, stderr, timeout):
+    """Cold CLI TTFT proxy: process launch through first generated stdout byte.
+
+    Startup, model loading and prefill are included. This is not warm HTTP TTFT.
+    The noninteractive --nothink CLI flushes generated text without a banner.
+    Always reap our child, including timeout and pipe-read failures.
+    """
+    start = time.monotonic()
+    deadline = start + timeout
+    first = None
+    with subprocess.Popen(args, env=env, stdin=subprocess.DEVNULL,
+                          stdout=subprocess.PIPE, stderr=stderr, bufsize=0) as child:
+        try:
+            with selectors.DefaultSelector() as ready:
+                ready.register(child.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not ready.select(remaining):
+                        raise subprocess.TimeoutExpired(args, timeout)
+                    data = os.read(child.stdout.fileno(), 65536)
+                    if not data:
+                        break
+                    if first is None:
+                        first = time.monotonic() - start
+                    stdout.write(data)
+            return child.wait(timeout=max(0, deadline - time.monotonic())), first
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait()
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--reference", default="./ds4")
@@ -56,6 +89,7 @@ def main():
     p.add_argument("--repeats", type=int, default=3)
     p.add_argument("--skip-correctness", action="store_true")
     p.add_argument("--skip-bench", action="store_true")
+    p.add_argument("--ttft", action="store_true", help="Measure cold CLI launch-to-first-output on short/long prompts")
     p.add_argument("--interactive", action="store_true", help="Compare a two-turn CLI transcript")
     p.add_argument("--vision", help="Optional matching vision encoder for image continuation test")
     p.add_argument("--timeout", type=int, default=900)
@@ -85,16 +119,21 @@ def main():
                                   for path in sorted(binaries)}}
     (out / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
 
-    def run(name, kind, args, input_text=None):
+    def run(name, kind, args, input_text=None, first_output=False):
         before = vmstat()
         start = time.monotonic()
         timed_out = False
-        with (out / (name + ".out")).open("w") as stdout, (out / (name + ".log")).open("w") as stderr:
+        first_seconds = None
+        with (out / (name + ".out")).open("wb") as stdout, (out / (name + ".log")).open("wb") as stderr:
             try:
-                result = subprocess.run(args, env=envs[kind], stdout=stdout,
-                                        stderr=stderr, timeout=a.timeout,
-                                        input=input_text, text=True)
-                returncode = result.returncode
+                if first_output:
+                    returncode, first_seconds = capture_first_output(
+                        args, envs[kind], stdout, stderr, a.timeout)
+                else:
+                    result = subprocess.run(args, env=envs[kind], stdout=stdout,
+                                            stderr=stderr, timeout=a.timeout,
+                                            input=input_text, text=True)
+                    returncode = result.returncode
             except subprocess.TimeoutExpired:
                 timed_out = True
                 returncode = -1
@@ -104,6 +143,8 @@ def main():
                   "ds4_environment": {k: v for k, v in envs[kind].items() if k.startswith("DS4_")},
                   "wall_seconds": time.monotonic() - start,
                   "system_vmstat_delta": {k: after[k] - before[k] for k in before}}
+        if first_output:
+            record["process_to_first_output_seconds"] = first_seconds
         records.append(record)
         (out / "results.json").write_text(json.dumps(records, indent=2) + "\n")
         if returncode:
@@ -156,6 +197,31 @@ def main():
         if not outputs[0] or outputs[0] != outputs[1]:
             raise AssertionError(f"{label}: interactive output differs")
         print(f"{label}: identical nonempty stdout, completed generations checked", flush=True)
+
+    if a.ttft:
+        prompts = {"short": "Explain binary search in three sentences."}
+        if a.long_chars:
+            prompts["long"] = Path("speed-bench/promessi_sposi.txt").read_text()[:a.long_chars] + "\nRiassumi il testo in italiano."
+        for label, prompt in prompts.items():
+            prompt_file = out / ("ttft-" + label + ".txt")
+            prompt_file.write_text(prompt)
+            for rep in range(a.repeats):
+                outputs = []
+                order = ("reference", "candidate") if rep % 2 == 0 else ("candidate", "reference")
+                for kind in order:
+                    name = f"ttft-{label}-{rep}-{kind}"
+                    record = run(name, kind, [str(Path(getattr(a, kind)).resolve())] + common +
+                        ["--ctx", "262144", "--nothink", "--temp", "0", "-n", str(a.tokens),
+                         "--prompt-file", str(prompt_file)], first_output=True)
+                    if record["process_to_first_output_seconds"] is None:
+                        raise AssertionError(f"{name}: no generated output for TTFT")
+                    log = (out / (name + ".log")).read_text()
+                    if "generation:" not in log:
+                        raise AssertionError(f"{name}: missing completed generation")
+                    outputs.append((out / (name + ".out")).read_bytes())
+                    print(name, record["process_to_first_output_seconds"], flush=True)
+                if not outputs[0] or outputs[0] != outputs[1]:
+                    raise AssertionError(f"TTFT {label}: generated output differs")
 
     if not a.skip_bench:
         for ctx in a.contexts:

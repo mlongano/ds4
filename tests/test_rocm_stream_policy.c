@@ -27,6 +27,40 @@ int main(void) {
     assert(!ds4_rocm_stream_option(1, "1", "1"));
     assert(!ds4_rocm_stream_option(1, "0", NULL));
     assert(ds4_rocm_stream_option(0, "1", "0"));
+    for (int streaming = 0; streaming <= 1; streaming++) {
+        for (int glm = 0; glm <= 1; glm++) {
+            for (int hw = 0; hw <= 1; hw++) {
+                for (int ram = 0; ram <= 1; ram++) {
+                    for (int active = 0; active <= 1; active++) {
+                        for (int small = 0; small <= 1; small++) {
+                            uint64_t bytes = 16ull * 1048576ull - small;
+                            int allowed = streaming && !glm && !active && !small;
+                            assert(ds4_rocm_stream_bulk_policy(streaming, glm, hw, ram,
+                                bytes, active, NULL, NULL) == (allowed && hw && ram));
+                            assert(ds4_rocm_stream_bulk_policy(streaming, glm, hw, ram,
+                                bytes, active, "1", NULL) == allowed);
+                            assert(!ds4_rocm_stream_bulk_policy(streaming, glm, hw, ram,
+                                bytes, active, "1", "1"));
+                            assert(!ds4_rocm_stream_bulk_policy(streaming, glm, hw, ram,
+                                bytes, active, "0", NULL));
+                        }
+                    }
+                }
+                const uint64_t tokens[] = {1, 31, 32, 255, 256, 257, 4096};
+                for (unsigned i = 0; i < sizeof(tokens) / sizeof(tokens[0]); i++) {
+                    int allowed = streaming && !glm && tokens[i] >= 32;
+                    assert(ds4_rocm_stream_pair_policy(streaming, glm, hw, tokens[i],
+                        NULL, NULL) == (allowed && hw && tokens[i] >= 256));
+                    assert(ds4_rocm_stream_pair_policy(streaming, glm, hw, tokens[i],
+                        "1", NULL) == allowed);
+                    assert(!ds4_rocm_stream_pair_policy(streaming, glm, hw, tokens[i],
+                        "1", "1"));
+                    assert(!ds4_rocm_stream_pair_policy(streaming, glm, hw, tokens[i],
+                        "0", NULL));
+                }
+            }
+        }
+    }
     puts("ROCm direct-pointer policy: PASS");
     return 0;
 }
