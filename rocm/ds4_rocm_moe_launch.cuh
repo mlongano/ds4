@@ -691,33 +691,15 @@ static int routed_moe_launch(
                                            &up_slot_ptrs,
                                            &down_slot_ptrs,
                                            &stream_batch_unique);
-    /* Direct selected-expert pointers avoid compacting six routed experts on
-     * every decode layer.  Slab pins keep those addresses valid through the
-     * down projection.  This is the validated default for the 32 GiB discrete
-     * profile; other devices retain the compact path unless explicitly opted in. */
-    const char *direct_ptrs_env =
-        getenv("DS4_ROCM_ENABLE_STREAMING_DECODE_SELECTED_PTRS");
-    const char *legacy_split_env =
-        getenv("DS4_ROCM_ENABLE_STREAMING_DECODE_SELECTED_SPLIT");
-    static int direct_ptrs_profile_default = -1;
-    if (direct_ptrs_profile_default < 0) {
-        direct_ptrs_profile_default =
-            cuda_stream_uses_32g_discrete_profile();
-    }
-    const int direct_ptrs_requested =
-        (direct_ptrs_env && direct_ptrs_env[0] != '\0' &&
-         strcmp(direct_ptrs_env, "0") != 0) ||
-        (legacy_split_env && legacy_split_env[0] != '\0' &&
-         strcmp(legacy_split_env, "0") != 0) ||
-        (direct_ptrs_profile_default &&
-         getenv("DS4_ROCM_DISABLE_STREAMING_DECODE_SELECTED_PTRS") == NULL);
+    /* Slab pins keep direct selected-expert addresses valid through down.
+     * Only the validated IQ2_XXS/Q2_K path may bypass compaction. */
     const int split_selected =
         !stream_full_layer &&
         !full_table_cached &&
         n_tokens == 1u &&
-        (iq2_gate_path || q2k_path) &&
+        iq2_path &&
         n_expert <= DS4_ROCM_N_EXPERT_USED &&
-        direct_ptrs_requested &&
+        cuda_stream_direct_ptrs_enabled(gate_type, down_type) &&
         cuda_stream_selected_apply_split(model_map,
                                          layer_index,
                                          n_total_expert,
@@ -1306,46 +1288,61 @@ static int routed_moe_launch(
                 !q4k_path &&
                 !sorted_pairs;
             if (split_supported) {
-                ok = cuda_stream_selected_finish_pending_missing(0);
+                const int overlap = ds4_rocm_stream_option(
+                    cuda_stream_r9700_profile(),
+                    getenv("DS4_ROCM_ENABLE_STREAMING_DECODE_OVERLAP"),
+                    getenv("DS4_ROCM_DISABLE_STREAMING_DECODE_OVERLAP"));
+                const unsigned passes = overlap ? 2u : 1u;
                 dim3 qgrid((expert_mid_dim + 127u) / 128u, pair_count, 1);
-                const uint32_t all_selected_mask =
-                    stream_resident_mask | stream_missing_mask;
-                if (ok && use_decode_lut_gate) {
-                    moe_gate_up_mid_decode_lut_qwarp32_ptrs_kernel<<<qgrid, 256>>>(
-                        (float *)gate->ptr,
-                        (float *)up->ptr,
-                        (float *)mid->ptr,
-                        gate_slot_ptrs,
-                        up_slot_ptrs,
-                        xq,
-                        (const int32_t *)selected_exec->ptr,
-                        (const float *)weights->ptr,
-                        gate_row_bytes,
-                        xq_blocks,
-                        expert_mid_dim,
-                        n_expert,
-                        write_gate_up,
-                        all_selected_mask,
-                        clamp);
-                } else if (ok) {
-                    moe_gate_up_mid_qwarp32_ptrs_kernel<<<qgrid, 256>>>(
-                        (float *)gate->ptr,
-                        (float *)up->ptr,
-                        (float *)mid->ptr,
-                        gate_slot_ptrs,
-                        up_slot_ptrs,
-                        xq,
-                        (const int32_t *)selected_exec->ptr,
-                        (const float *)weights->ptr,
-                        gate_row_bytes,
-                        xq_blocks,
-                        expert_mid_dim,
-                        n_expert,
-                        all_selected_mask,
-                        clamp);
+                /* The pointer table was published before either pass. Resident
+                 * slabs stay pinned while the missing uploads finish. Never
+                 * switch all-hit/all-miss layers back to compact buffers. */
+                for (unsigned pass = 0; ok && pass < passes; pass++) {
+                    if (pass + 1u == passes) {
+                        ok = cuda_stream_selected_finish_pending_missing(0);
+                    }
+                    const uint32_t active_mask = !overlap ?
+                        stream_resident_mask | stream_missing_mask :
+                        (pass == 0 ? stream_resident_mask : stream_missing_mask);
+                    if (!ok || active_mask == 0) continue;
+                    if (use_decode_lut_gate) {
+                        moe_gate_up_mid_decode_lut_qwarp32_ptrs_kernel<<<qgrid, 256>>>(
+                            (float *)gate->ptr,
+                            (float *)up->ptr,
+                            (float *)mid->ptr,
+                            gate_slot_ptrs,
+                            up_slot_ptrs,
+                            xq,
+                            (const int32_t *)selected_exec->ptr,
+                            (const float *)weights->ptr,
+                            gate_row_bytes,
+                            xq_blocks,
+                            expert_mid_dim,
+                            n_expert,
+                            write_gate_up,
+                            active_mask,
+                            clamp);
+                    } else {
+                        moe_gate_up_mid_qwarp32_ptrs_kernel<<<qgrid, 256>>>(
+                            (float *)gate->ptr,
+                            (float *)up->ptr,
+                            (float *)mid->ptr,
+                            gate_slot_ptrs,
+                            up_slot_ptrs,
+                            xq,
+                            (const int32_t *)selected_exec->ptr,
+                            (const float *)weights->ptr,
+                            gate_row_bytes,
+                            xq_blocks,
+                            expert_mid_dim,
+                            n_expert,
+                            active_mask,
+                            clamp);
+                    }
+                    ok = cuda_ok(cudaGetLastError(),
+                                 "routed_moe direct-pointer gate/up launch");
                 }
-                if (ok) ok = cuda_ok(cudaGetLastError(),
-                                     "routed_moe direct-pointer gate/up launch");
+                if (!ok) (void)cuda_stream_selected_finish_pending_missing(0);
                 split_gateup_done = ok;
             } else {
                 ok = cuda_stream_selected_finish_pending_missing(

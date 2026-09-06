@@ -1,3 +1,5 @@
+#include "ds4_rocm_stream_policy.h"
+
 static const void *g_model_host_base;
 static const char *g_model_device_base;
 static uint64_t g_model_registered_size;
@@ -344,6 +346,7 @@ static cudaEvent_t g_stream_batch_selected_upload_ready_event;
 static int g_stream_batch_selected_upload_event_pending;
 static void *g_stream_read_stage_raw[DS4_ROCM_STREAM_READ_WORKERS];
 static uint64_t g_stream_read_stage_bytes[DS4_ROCM_STREAM_READ_WORKERS];
+static int g_stream_read_pipeline;
 static cudaStream_t g_stream_read_upload_streams[DS4_ROCM_STREAM_READ_WORKERS];
 static pthread_t g_stream_read_threads[DS4_ROCM_STREAM_READ_WORKERS];
 static uint32_t g_stream_read_thread_ids[DS4_ROCM_STREAM_READ_WORKERS];
@@ -1631,6 +1634,39 @@ static int cuda_stream_uses_32g_discrete_profile(void) {
            (uint64_t)total_b <= 36ull * gib;
 }
 
+static const cudaDeviceProp *cuda_stream_device_properties(void) {
+    /* This backend uses device zero. Avoid querying the driver on every layer. */
+    static cudaDeviceProp prop;
+    static int have_prop = 0;
+    if (!have_prop) {
+        if (cudaGetDeviceProperties(&prop, 0) != cudaSuccess) {
+            (void)cudaGetLastError();
+            return NULL;
+        }
+        have_prop = 1;
+    }
+    return &prop;
+}
+
+static int cuda_stream_r9700_profile(void) {
+    const cudaDeviceProp *prop = cuda_stream_device_properties();
+    if (!prop) return 0;
+    return g_ssd_streaming_mode && !g_glm_model &&
+        ds4_rocm_stream_r9700_hardware(prop->gcnArchName, prop->integrated,
+                                      (uint64_t)prop->totalGlobalMem);
+}
+
+static int cuda_stream_direct_ptrs_enabled(unsigned gate_type, unsigned down_type) {
+    const cudaDeviceProp *prop = cuda_stream_device_properties();
+    if (!prop) return 0;
+    return ds4_rocm_stream_direct_policy(
+        g_ssd_streaming_mode, g_glm_model, prop->gcnArchName, prop->integrated,
+        (uint64_t)prop->totalGlobalMem, gate_type, down_type,
+        getenv("DS4_ROCM_ENABLE_STREAMING_DECODE_SELECTED_PTRS"),
+        getenv("DS4_ROCM_ENABLE_STREAMING_DECODE_SELECTED_SPLIT"),
+        getenv("DS4_ROCM_DISABLE_STREAMING_DECODE_SELECTED_PTRS"));
+}
+
 static uint64_t cuda_stream_resident_free_reserve_bytes(void) {
     /*
      * Headroom kept free on the (unified-memory) device while growing the
@@ -2141,6 +2177,11 @@ static void cuda_stream_read_profile_print(void) {
         g_stream_read_profile_wait_calls == 0u) {
         return;
     }
+    if (g_stream_read_pipeline) {
+        fprintf(stderr, DS4_GPU_LOG_PREFIX
+                "stream read profile: pipelined upload elapsed includes overlapped reads; "
+                "read/upload totals are not additive\n");
+    }
     const double jobs = g_stream_read_profile_jobs ?
         (double)g_stream_read_profile_jobs : 1.0;
     const double waits = g_stream_read_profile_wait_calls ?
@@ -2243,7 +2284,8 @@ static void cuda_stream_read_job_run(cuda_stream_read_job *job,
 
 static int cuda_stream_read_job_upload(
         cuda_stream_read_job *job,
-        cudaStream_t stream) {
+        cudaStream_t stream,
+        int defer_wait) {
     if (!job || !job->ok || !job->dst || !job->host_buf || !stream) {
         if (job) job->errnum = EINVAL;
         return 0;
@@ -2253,6 +2295,7 @@ static int cuda_stream_read_job_upload(
                                       (size_t)job->bytes,
                                       cudaMemcpyHostToDevice,
                                       stream);
+    if (err == cudaSuccess && defer_wait) return 1;
     if (err == cudaSuccess) err = cudaStreamSynchronize(stream);
     if (err != cudaSuccess) {
         fprintf(stderr,
@@ -2266,6 +2309,94 @@ static int cuda_stream_read_job_upload(
     job->uploaded = 1;
     if (!job->direct) cuda_model_drop_file_pages(job->offset, job->bytes);
     return 1;
+}
+
+/* Publish completion only after SDMA has stopped using the job's staging
+ * buffer and destination. The caller may free the entire job set immediately
+ * when active_done reaches active_count. */
+static void cuda_stream_read_pipeline_complete(
+        cuda_stream_read_job *job, cudaStream_t stream,
+        uint64_t read_us, double upload_t0) {
+    const int profile = g_stream_read_profile_enabled == 1;
+    if (job->ok) {
+        const cudaError_t err = cudaStreamSynchronize(stream);
+        if (err == cudaSuccess) {
+            job->uploaded = 1;
+            if (!job->direct) cuda_model_drop_file_pages(job->offset, job->bytes);
+        } else {
+            fprintf(stderr, DS4_GPU_LOG_PREFIX "pipelined upload wait failed: %s\n",
+                    cudaGetErrorString(err));
+            (void)cudaGetLastError();
+            job->ok = 0;
+            job->errnum = EIO;
+        }
+    }
+    const uint64_t upload_us = profile && upload_t0 != 0.0 ?
+        cuda_stream_read_profile_us(cuda_wall_sec() - upload_t0) : 0;
+    pthread_mutex_lock(&g_stream_read_mutex);
+    if (profile) {
+        g_stream_read_profile_jobs++;
+        g_stream_read_profile_bytes += job->bytes;
+        g_stream_read_profile_read_us += read_us;
+        /* Includes the overlapped next read; not additive with read_us. */
+        g_stream_read_profile_upload_us += upload_us;
+    }
+    if (!job->ok) g_stream_read_active_ok = 0;
+    g_stream_read_active_done++;
+    if (g_stream_read_active_done >= g_stream_read_active_count) {
+        pthread_cond_signal(&g_stream_read_done_cond);
+    }
+    pthread_mutex_unlock(&g_stream_read_mutex);
+}
+
+static void *cuda_stream_read_pipeline_worker(void *arg) {
+    const uint32_t worker_id = *(const uint32_t *)arg;
+    (void)cudaSetDevice(0);
+    const cudaStream_t stream = g_stream_read_upload_streams[worker_id];
+    cuda_stream_read_job *pending = NULL;
+    uint64_t pending_read_us = 0;
+    double pending_upload_t0 = 0;
+    uint32_t bank = 0;
+    for (;;) {
+        pthread_mutex_lock(&g_stream_read_mutex);
+        while (!g_stream_read_pool_stop &&
+               (!g_stream_read_active_jobs ||
+                g_stream_read_active_next >= g_stream_read_active_count)) {
+            if (pending) break;
+            pthread_cond_wait(&g_stream_read_work_cond, &g_stream_read_mutex);
+        }
+        const int stop = g_stream_read_pool_stop;
+        cuda_stream_read_job *job = NULL;
+        void *stage = NULL;
+        uint64_t stage_bytes = 0;
+        if (!stop && g_stream_read_active_jobs &&
+            g_stream_read_active_next < g_stream_read_active_count) {
+            job = &g_stream_read_active_jobs[g_stream_read_active_next++];
+            stage_bytes = g_stream_read_stage_bytes[worker_id];
+            stage = (char *)g_stream_read_stage_raw[worker_id] + bank * stage_bytes;
+            bank ^= 1u;
+        }
+        pthread_mutex_unlock(&g_stream_read_mutex);
+
+        const int profile = g_stream_read_profile_enabled == 1;
+        const double read_t0 = profile ? cuda_wall_sec() : 0;
+        if (job) cuda_stream_read_job_run(job, stage, stage_bytes);
+        const uint64_t read_us = profile && job ?
+            cuda_stream_read_profile_us(cuda_wall_sec() - read_t0) : 0;
+        if (pending) {
+            cuda_stream_read_pipeline_complete(pending, stream,
+                                              pending_read_us, pending_upload_t0);
+            pending = NULL;
+        }
+        if (stop) break;
+        if (!job) continue;
+        const double upload_t0 = profile && job->ok ? cuda_wall_sec() : 0;
+        if (job->ok) (void)cuda_stream_read_job_upload(job, stream, 1);
+        pending = job;
+        pending_read_us = read_us;
+        pending_upload_t0 = upload_t0;
+    }
+    return NULL;
 }
 
 static void *cuda_stream_read_worker(void *arg) {
@@ -2305,7 +2436,7 @@ static void *cuda_stream_read_worker(void *arg) {
             (void)cuda_stream_read_job_upload(
                     job,
                     worker_id < DS4_ROCM_STREAM_READ_WORKERS ?
-                        g_stream_read_upload_streams[worker_id] : NULL);
+                        g_stream_read_upload_streams[worker_id] : NULL, 0);
             if (profile) {
                 upload_us =
                     cuda_stream_read_profile_us(cuda_wall_sec() - upload_t0);
@@ -2399,6 +2530,10 @@ static int cuda_stream_read_pool_ensure(void) {
     g_stream_read_active_ok = 1;
     g_stream_read_active_owner_set = 0;
     g_stream_read_pool_workers = cuda_stream_read_worker_count();
+    g_stream_read_pipeline = ds4_rocm_stream_option(
+        cuda_stream_r9700_profile(),
+        getenv("DS4_ROCM_ENABLE_STREAM_READ_PIPELINE"),
+        getenv("DS4_ROCM_DISABLE_STREAM_READ_PIPELINE"));
     (void)cuda_stream_read_profile_enabled();
     if (!cuda_stream_read_upload_streams_ensure()) {
         pthread_mutex_unlock(&g_stream_read_mutex);
@@ -2408,7 +2543,8 @@ static int cuda_stream_read_pool_ensure(void) {
         g_stream_read_thread_ids[i] = i;
         const int rc = pthread_create(&g_stream_read_threads[i],
                                       NULL,
-                                      cuda_stream_read_worker,
+                                      g_stream_read_pipeline ? cuda_stream_read_pipeline_worker :
+                                          cuda_stream_read_worker,
                                       &g_stream_read_thread_ids[i]);
         if (rc != 0) {
             g_stream_read_pool_stop = 1;
@@ -2471,6 +2607,14 @@ static int cuda_stream_read_jobs_prepare(cuda_stream_read_job *jobs, uint32_t co
         max_bytes += 2u * g_model_direct_align;
     }
 
+    const uint32_t banks = g_stream_read_pipeline ? 2u : 1u;
+    if (banks > 1u && g_model_direct_align > 1u) {
+        /* Each bank must start at an O_DIRECT-compatible address, even when
+         * the largest tensor is not itself a multiple of the I/O alignment. */
+        if (max_bytes > UINT64_MAX - (g_model_direct_align - 1u)) return 0;
+        max_bytes = cuda_round_up(max_bytes, g_model_direct_align);
+    }
+    if (max_bytes > SIZE_MAX / banks) return 0;
     const uint32_t workers = g_stream_read_pool_started ?
         g_stream_read_pool_workers : cuda_stream_read_worker_count();
     for (uint32_t i = 0; i < workers; i++) {
@@ -2481,7 +2625,7 @@ static int cuda_stream_read_jobs_prepare(cuda_stream_read_job *jobs, uint32_t co
                 g_stream_read_stage_bytes[i] = 0;
             }
             cudaError_t err = cudaMallocHost(&g_stream_read_stage_raw[i],
-                                             (size_t)max_bytes);
+                                             (size_t)max_bytes * banks);
             if (err != cudaSuccess) {
                 fprintf(stderr,
                         DS4_GPU_LOG_PREFIX "streaming read pinned allocation failed "
@@ -6508,6 +6652,8 @@ extern "C" int ds4_gpu_set_model_map_range(const void *model_map, uint64_t model
                     (double)limit / 1073741824.0);
             return 0;
         }
+        /* Repeated requests for a resident range allocate nothing. */
+        if (cuda_model_range_is_cached(model_map, map_offset, map_size)) return 1;
         if (g_model_range_bytes > limit ||
             map_size > limit - g_model_range_bytes) {
             if (!cuda_ok(cudaDeviceSynchronize(),
@@ -6567,7 +6713,12 @@ extern "C" int ds4_gpu_set_model_map_spans(
     if (!ds4_gpu_set_model_map(model_map, model_size)) return 0;
     if (g_ssd_streaming_mode) {
         uint64_t request_bytes = 0;
+        uint64_t missing_bytes = 0;
         for (uint32_t i = 0; i < count; i++) {
+            if (!cuda_model_range_is_cached(model_map, offsets[i], sizes[i]) &&
+                !cuda_u64_add_checked(missing_bytes, sizes[i], &missing_bytes)) {
+                return 0;
+            }
             if (!cuda_u64_add_checked(request_bytes, sizes[i], &request_bytes)) {
                 fprintf(stderr,
                         DS4_GPU_LOG_PREFIX "streaming model span byte count overflow\n");
@@ -6583,8 +6734,12 @@ extern "C" int ds4_gpu_set_model_map_spans(
                     (double)limit / 1073741824.0);
             return 0;
         }
+        /* Only missing spans grow the cache. Counting resident spans again
+         * can flush dense weights even when the complete request already fits.
+         * The full request check above still guarantees it fits after a flush. */
+        if (missing_bytes == 0) return 1;
         if (g_model_range_bytes > limit ||
-            request_bytes > limit - g_model_range_bytes) {
+            missing_bytes > limit - g_model_range_bytes) {
             if (!cuda_ok(cudaDeviceSynchronize(),
                          "streaming model span cache eviction sync")) {
                 return 0;

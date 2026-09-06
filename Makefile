@@ -17,7 +17,7 @@ QUALITY_CFLAGS ?= -O3 $(DEBUG_FLAGS) $(NATIVE_CPU_FLAG) -Wall -Wextra -std=c11
 
 LDLIBS ?= -lm -pthread
 METAL_SRCS := $(wildcard metal/*.metal)
-ROCM_SRCS := $(wildcard rocm/*.cuh)
+ROCM_SRCS := $(wildcard rocm/*.cuh rocm/*.h)
 DS4_TEST_MODEL ?= ds4flash.gguf
 DS4_TEST_MTP ?= gguf/DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf
 DS4_DSPARK_MODEL ?= $(DS4_TEST_MODEL)
@@ -200,6 +200,11 @@ rdna4:
 # (tests/test_sampling, the CUDA session/mixed-batch oracles) are not part
 # of this target; run them through `make test` / `make cuda-regression` on
 # CUDA hosts.  Everything else mirrors `make test`.
+.PHONY: test-rocm-streaming-unit
+test-rocm-streaming-unit:
+	python3 tests/test_rocm_stream_pipeline.py
+	python3 tests/test_rocm_streaming_regression.py
+
 test-rocm:
 	$(MAKE) -B ds4_test ds4_agent_test ds4-eval q4k-dot-test mxfp4-dot-test \
 		tests/test_layer_pack tests/test_engine_mgpu_placement tests/test_gpu_args tests/test_prompt_prefix \
