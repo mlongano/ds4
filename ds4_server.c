@@ -12424,6 +12424,9 @@ decode_again:
     if (max_tokens > room) max_tokens = room;
     trace_event(s, trace_id, "prefill done; decode_max=%d ctx_room=%d", max_tokens, room);
     const double decode_t0 = now_sec();
+    const bool decode_profile = getenv("DS4_SERVER_DECODE_PROFILE") != NULL;
+    double sample_seconds = 0.0, eval_seconds = 0.0, first_eval_seconds = 0.0;
+    unsigned eval_calls = 0;
     double last_decode_log_t = decode_t0;
     int last_decode_log_completion = 0;
     thinking_state thinking = thinking_state_from_prompt(&j->req);
@@ -12461,11 +12464,13 @@ decode_again:
             temperature = 0.0f;
         }
         const int eos_token = ds4_token_eos(s->engine);
+        const double sample_t0 = decode_profile ? now_sec() : 0.0;
         int token = j->req.ignore_eos ?
             ds4_session_argmax_ignoring_eos(slot->session,
                                             j->req.think_mode) :
             ds4_session_sample(slot->session, temperature, top_k,
                                top_p, min_p, &rng);
+        if (decode_profile) sample_seconds += now_sec() - sample_t0;
         if (token < 0) {
             finish = "error";
             snprintf(err, sizeof(err), "failed to select a non-EOS token");
@@ -12480,6 +12485,7 @@ decode_again:
 
         int toks[17];
         int ntok = 0;
+        const double eval_t0 = decode_profile ? now_sec() : 0.0;
         if (!s->batched_mode &&
             ds4_engine_mtp_draft_tokens(s->engine) > 1 &&
             getenv("DS4_MTP_SPEC_DISABLE") == NULL)
@@ -12510,6 +12516,11 @@ decode_again:
             ntok = 1;
         }
 
+        if (decode_profile) {
+            const double elapsed = now_sec() - eval_t0;
+            eval_seconds += elapsed;
+            if (eval_calls++ == 0) first_eval_seconds = elapsed;
+        }
         bool stop_decode = false;
         for (int ti = 0; ti < ntok && completion < max_tokens; ti++) {
             if (job_cancelled(j)) {
@@ -12701,6 +12712,14 @@ decode_again:
         if (stop_decode) break;
     }
     server_generation_leave(s);
+    if (decode_profile) {
+        server_log(DS4_LOG_DEFAULT,
+            "ds4-server: decode profile tokens=%d eval_calls=%u sample_ms=%.3f "
+            "eval_ms=%.3f first_eval_ms=%.3f other_ms=%.3f",
+            completion, eval_calls, sample_seconds * 1000.0,
+            eval_seconds * 1000.0, first_eval_seconds * 1000.0,
+            (now_sec() - decode_t0 - sample_seconds - eval_seconds) * 1000.0);
+    }
 
     if (job_cancelled(j)) {
         request_live_state_clear(s, slot);

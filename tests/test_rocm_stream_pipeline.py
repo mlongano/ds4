@@ -33,4 +33,13 @@ subprocess.run(["cc", "-std=c99", "-Wall", "-Wextra", "-Werror",
                 "-I", str(out), str(root / "tests/test_rocm_model_upload.c"),
                 "-o", str(out / "bulk")], check=True)
 subprocess.run([str(out / "bulk")], timeout=60, check=True)
+start = source.index('extern "C" int ds4_rocm_release_prefill_model_ranges(void) {')
+end = source.index("static void cuda_model_range_release_all(void)", start)
+# Only strip C linkage syntax; compile the production function body verbatim.
+(out / "ds4_decode_reset_under_test.h").write_text(source[start:end].replace('extern "C" ', '', 1))
+subprocess.run(["cc", "-std=c99", "-Wall", "-Wextra", "-Werror", "-pthread",
+                "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-g",
+                "-I", str(out), str(root / "tests/test_rocm_decode_model_reset.c"),
+                "-o", str(out / "reset")], check=True)
+subprocess.run([str(out / "reset")], timeout=60, check=True)
 print("Artifacts:", out)

@@ -36674,6 +36674,11 @@ static bool metal_graph_prefill_layer_major(
         ok = last_hc != NULL;
     }
     if (ok && logits && g->ssd_streaming) {
+#ifdef DS4_ROCM_BUILD
+        /* Seeding above may read mapped prefill weights. Retire their arenas
+         * only now, before the output head and per-layer/static decode maps. */
+        ok = ds4_rocm_release_prefill_model_ranges() != 0;
+#endif
         const bool static_decode_map =
             metal_graph_stream_decode_static_map_enabled() &&
             weights_model_map_decode_static_supported(weights);
@@ -36682,9 +36687,9 @@ static bool metal_graph_prefill_layer_major(
             metal_graph_stream_decode_static_map_state_cache_enabled();
         g->streaming_static_decode_map_current = false;
         if (static_map_state_cache) {
-            ok = metal_graph_stream_map_decode_static_all(model, weights);
+            if (ok) ok = metal_graph_stream_map_decode_static_all(model, weights);
             if (ok) g->streaming_static_decode_map_current = true;
-        } else {
+        } else if (ok) {
             ok = metal_graph_stream_map_output(model, weights);
         }
     }

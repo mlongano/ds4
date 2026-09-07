@@ -204,6 +204,7 @@ rdna4:
 test-rocm-streaming-unit:
 	python3 tests/test_rocm_stream_pipeline.py
 	python3 tests/test_rocm_streaming_regression.py
+	python3 tests/test_rocm_server_regression.py
 
 test-rocm:
 	$(MAKE) -B ds4_test ds4_agent_test ds4-eval q4k-dot-test mxfp4-dot-test \

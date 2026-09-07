@@ -269,3 +269,115 @@ Further work is separate from these accepted changes: persistent dense arena
 ownership, warm-server and KV-reuse TTFT, cancellation/snapshot recovery,
 batch-prefill pins, and correctness/performance beyond the tested contexts.
 Other GPU families and CUDA/Metal hardware were not tested in this phase.
+
+## Sampled server generation follow-up
+
+Baseline: `35bacb1`. The user prioritized generation throughput over TTFT.
+The original service request used thinking, tools, vision residency and FFN
+steering scale 3. Its approximately 7.3 t/s decode was not represented by the
+older greedy CLI frontier benchmark.
+
+### Diagnosis and accepted change
+
+A fixed-seed server replay reproduced the slower generation. CPU sampling
+accounted for only 149 ms out of 52.6 seconds. Only 6.10 GiB of experts stayed
+resident despite the configured cache target; 48370 of 99072 selections missed.
+
+The model-span cache can retain prefill weight ranges while adding decode
+weights if their combined size fits its 16 GiB limit. Those prefill ranges
+then occupy VRAM for the entire decode, displacing independently cached experts.
+This depends on where the last prefill leaves the cache, so an 8K benchmark can
+avoid the problem while a shorter prompt or tool-result suffix triggers it.
+
+The accepted fix adds an explicit ROCm phase boundary after prefill and expert
+seeding, before the output head. It synchronizes GPU work and retires model-span
+allocations. Normal output/per-layer or static mapping then reloads decode
+weights. It does not release KV, independent expert slabs or graph buffers.
+If selected uploads or read-pool jobs are active, it leaves the cache untouched.
+Automatic selection is limited to DeepSeek streaming on discrete gfx1201 with
+30–36 GiB VRAM; Metal, CUDA and GLM do not take this path.
+
+ROCm's static decode map is opt-in. The first experimental hook was mistakenly
+placed only in that branch; the accepted hook covers both mapping modes.
+
+In a profiled reset-only pair, expert residency rose to 13.83 GiB, misses fell
+to 30694, and inference time fell to 42.14 seconds. Generated fields matched
+exactly. Smaller model arenas alone offered about 5%, but added less than 1%
+on top of the reset in screening. That tuning and its experimental environment
+variable were removed. Allocation sizes and all cache budgets remain unchanged.
+
+### Repeated server measurements
+
+Three unprofiled alternating pairs, fresh process per sample, fixed seed 123,
+temperature 1, top-p 1, 384 output tokens, thinking/tools enabled, encoder loaded,
+steering scale 3, 262144 allocated context and managed KV:
+
+| Measurement | Reference median | Candidate median |
+|---|---:|---:|
+| Overall server generation | 7.15 t/s | 8.99 t/s |
+| Generation after first logged 50-token interval | 7.17 t/s | 9.19 t/s |
+| Generation duration | 53.689 s | 42.699 s |
+
+The overall gain is 25.7%; after the initial interval it is 28.0%. Individual
+overall rates were 7.26/7.10/7.15 versus 8.99/9.09/8.90. No samples were
+excluded. The six processes recorded 135 swap-in pages, 4 swap-out pages and
+197 major faults system-wide, using 4096-byte pages.
+
+The frozen replay contains the saved user/assistant/tool-result history and
+representative system/tool definitions: 1529 input tokens. The original Pi
+system prompt and schemas were not saved, so this is not an exact replay of its
+8920-token request. A run that reread the growing live session instead sent
+66796 tokens and failed the output gate; it is not comparable performance
+evidence. Subsequent runs use the frozen request artifact exclusively.
+
+All three pairs produced identical generated content, reasoning and tool
+fields; transport fragmentation and random tool IDs are excluded. The requests
+intentionally stop at the 384-token cap, not necessarily at a complete answer.
+This does not establish full-vocabulary equality or a universal 10 t/s rate.
+
+### Correctness and remaining limits
+
+- The RDNA4 build and CPU sanitizer/policy tests pass. The actual reset body is
+  tested for enabled/disabled hardware/model policy, active uploads and failed
+  GPU synchronization; release must never precede a successful synchronization.
+- Complete saved top-20 logprob JSON matches `35bacb1` for 42-, 25- and
+  12583-token prompts, each followed by 128 greedy steps. The disable switch
+  also matches for 64-step continuations.
+- Two-turn chat, image continuation, and a separate steered image/text/image
+  sequence match baseline stdout. The latter checks three completed generations
+  and encoder use after earlier model-span retirement. The vision unit passes.
+- A single 8K CLI pair measured 10.54 → 10.75 steady t/s; a single 16K pair
+  measured 9.81 → 10.12. These are regression checks, not repeated speed claims.
+- The service's reasoning/tool text buffering remains unchanged. Upstream
+  `fe2d3b0` deliberately introduced it to handle repeated reasoning safely;
+  deleting it would violate the existing streamed-reasoning regression test.
+- Warm multi-request server performance, cancellation, GPU fault recovery,
+  snapshot reload and other GPU families still need separate validation.
+
+### Reproduction and diagnostics
+
+`DS4_ROCM_DISABLE_DECODE_MODEL_RESET=1` restores the previous cache policy.
+`DS4_ROCM_ENABLE_DECODE_MODEL_RESET=0` also disables automatic use; a nonzero
+disable wins over enable. Explicit enable may select other hardware, never
+active uploads or non-DeepSeek/non-streaming modes.
+
+`DS4_SERVER_DECODE_PROFILE=1` reports sampling, inference, first inference and
+other generation time. It is diagnostic; final performance pairs leave it off.
+The existing ROCm cache/read profiles expose expert misses and transfer totals.
+
+`make test-rocm-streaming-unit`
+
+`python3 tests/rocm_server_regression.py --request /tmp/ds4-generation-perf/screen-v2/request.json --reference /tmp/ds4-generation-perf/ds4-server-baseline --vision gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf --steering-file dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 --tokens 384 --repeats 3`
+
+The server runner binds localhost only, uses a new process per sample, never
+starts/stops systemd units, and stores its working files under a new temporary
+directory. Supply a frozen OpenAI request JSON; original private session data
+and machine-specific replay fixtures are not committed. It saves binary hashes,
+request JSON, SSE events, commands/environments, generated fields and swap
+counters. Six parser/measurement unit tests cover fragmented output, tool fields,
+missing output/usage, errors and generation timing.
+
+Evidence: `/tmp/ds4-generation-perf/`, especially `screen-v2`, `reset-screen-v3`,
+`final-server`, `final-cli`, `image-transitions`, `disabled` and build/unit logs.
+The service was stopped with permission while holding the RAM model open, so
+its stop hook could not unmount the RAM copy. Production settings are unchanged.

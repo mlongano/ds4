@@ -39,6 +39,14 @@ static inline int ds4_rocm_stream_bulk_policy(
         ds4_rocm_stream_option(r9700 && tmpfs, enable, disable);
 }
 
+/* A phase boundary may retire only idle model arenas, never live uploads. */
+static inline int ds4_rocm_stream_decode_reset_policy(
+        int streaming, int glm, int r9700, int uploads_active,
+        const char *enable, const char *disable) {
+    return streaming && !glm && !uploads_active &&
+        ds4_rocm_stream_option(r9700, enable, disable);
+}
+
 /* Keep automatic arithmetic changes within the measured hardware/model pair.
  * An explicit enable may select another device, never another quantization. */
 static inline int ds4_rocm_stream_direct_policy(

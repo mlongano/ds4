@@ -6322,6 +6322,27 @@ static void cuda_model_range_release_ranges_only(void) {
     g_model_cache_full = 0;
 }
 
+extern "C" int ds4_rocm_release_prefill_model_ranges(void) {
+    /* Never retire addresses that a CPU reader may still upload into.
+     * Prefill and seeding normally join their work before this phase boundary. */
+    pthread_mutex_lock(&g_stream_read_mutex);
+    const int busy = g_stream_read_active_jobs != NULL;
+    pthread_mutex_unlock(&g_stream_read_mutex);
+    if (!ds4_rocm_stream_decode_reset_policy(
+            g_ssd_streaming_mode, g_glm_model, cuda_stream_r9700_profile(),
+            busy || g_stream_selected_pending.active || g_stream_batch_selected_pending.active,
+            getenv("DS4_ROCM_ENABLE_DECODE_MODEL_RESET"),
+            getenv("DS4_ROCM_DISABLE_DECODE_MODEL_RESET"))) return 1;
+    if (!cuda_ok(cudaDeviceSynchronize(), "retire prefill model ranges")) return 0;
+    if (getenv("DS4_ROCM_STREAM_CACHE_STATS")) {
+        fprintf(stderr, DS4_GPU_LOG_PREFIX
+                "retiring prefill model ranges: %.2f GiB\n",
+                (double)g_model_range_bytes / 1073741824.0);
+    }
+    cuda_model_range_release_ranges_only();
+    return 1;
+}
+
 static void cuda_model_range_release_all(void) {
     cuda_model_range_release_ranges_only();
     g_stream_selected_cache.loaded = 0;

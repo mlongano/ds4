@@ -196,6 +196,9 @@ int ds4_gpu_q8_cache_suppressed(void);
 void ds4_gpu_set_q8_cache_suppressed(int suppressed);
 #ifdef DS4_ROCM_BUILD
 void ds4_gpu_release_q8_f16_cache(void);
+/* Prefill and expert seeding must finish before retiring model-span arenas.
+ * Keeps KV and the independently allocated expert cache. */
+int ds4_rocm_release_prefill_model_ranges(void);
 #endif
 
 /* Model-file ranges assigned to CUDA devices by the multi-GPU placement
