@@ -54,3 +54,10 @@ At every major change where one of the following could be affected, make sure to
 2. Test the SSD streaming path.
 3. Test the distributed inference if it could be affected, but ask the user before doing so.
 4. Check if CUDA could be broken after the change, and ask the user to give you access to the CUDA machine to actually test if everything is still fine.
+
+## Upstream
+
+Upstream intake — before merging `antirez/ds4`, rebasing the local commits, or judging
+whether upstream has anything worth taking: read `UPSTREAM.md`. It carries the delta
+inventory, the take/skip criteria, and the procedure with completion criteria. This file
+stays about code.
