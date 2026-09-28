@@ -1,8 +1,8 @@
 # ds4.c — DeepSeek V4 Flash Native Inference Engine
 
-A separate inference stack from the `pi-llama-router` / Unsloth Studio setup described in `ECOSYSTEM.md`. Runs one large MoE model — DeepSeek V4 Flash — that doesn't fit the R9700's 32 GB VRAM even at low quantization, by streaming routed expert weights from storage instead of holding the whole model resident. All three (router, Studio, ds4) share that one GPU and are now coordinated through `pi-inference` (§4) rather than manual `systemctl` juggling.
+A separate inference stack from the `pi-llama-router` / Unsloth Studio setup described in `ECOSYSTEM.md`. Runs one large MoE model — DeepSeek V4 Flash — that doesn't fit the R9700's 32 GB VRAM even at low quantization, by streaming routed expert weights from storage instead of holding the whole model resident. Every stack that wants that one GPU — the router, Studio, ds4 and qwen-flash — is coordinated through `pi-inference` (§4) instead of manual `systemctl` juggling.
 
-Repo: `/media/NVME_DATA/MOUNTS/Models/ds4/` (fork of [antirez/ds4](https://github.com/antirez/ds4), branch `pr-558-rebase-main`)
+Repo: `/media/NVME_DATA/MOUNTS/Models/ds4/`, a fork of [antirez/ds4](https://github.com/antirez/ds4) published at `mlongano/ds4`. Development happens on branch `rocm-rdna4-streaming`; at the last writing it is 19 commits ahead of upstream `main` and 156 behind. Both numbers move fast, so refresh them (`git rev-list --count origin/main..HEAD`), and read `UPSTREAM.md` in this directory for the live inventory of what the delta contains.
 
 ---
 
@@ -10,7 +10,7 @@ Repo: `/media/NVME_DATA/MOUNTS/Models/ds4/` (fork of [antirez/ds4](https://githu
 
 ds4.c is antirez's standalone C inference engine for DeepSeek V4 and GLM 5.2 — not llama.cpp, no shared code with the router stack. It ships CPU, Metal, CUDA, and ROCm backends from one codebase, built with a plain `Makefile` (no CMake, no external ML framework).
 
-The model in use, DeepSeek V4 Flash at `IQ2XXS` quantization, is an 86,720,111,488-byte (80.76 GiB) GGUF — larger than the R9700's 32 GB VRAM and larger than most of a typical workstation's VRAM at any realistic quant. ds4.c makes this fit by never loading the full model into VRAM at once:
+The model in use, DeepSeek V4 Flash at `IQ2XXS` quantization, is an 86,720,111,776-byte (80.76 GiB) GGUF — larger than the R9700's 32 GB VRAM and larger than most of a typical workstation's VRAM at any realistic quant. ds4.c makes this fit by never loading the full model into VRAM at once:
 
 - **Non-routed weights** (attention, shared experts, embeddings, output head — ~8.2 GiB for this model) load once and stay resident on the GPU.
 - **Routed experts** (the MoE-specific weights selected per-token by the router, 6.75 MiB each) are *not* preloaded. They're read from the backing file on demand as the model's router selects them, uploaded to the GPU, and kept in a bounded **resident expert cache** sized as a percentage of the GPU's recommended working set (default 80%, tunable via `DS4_SSD_AUTO_CACHE_PCT`, see `ds4_ssd.c`; this deployment runs 65% — see §6).
@@ -65,7 +65,7 @@ Two real conflicts, both resolved by hand (a stale `git rerere` cache tried to a
 
 ### 2.4 What survived the rebase
 
-Because the reserve feature was fully superseded by upstream's equivalent, this fork's actual surviving contribution is just the WMMA guard — **3 files, 8 insertions, 4 deletions**:
+Because the reserve feature was fully superseded by upstream's equivalent, what the rebase itself landed is just the WMMA guard — **3 files, 8 insertions, 4 deletions**:
 
 - `Makefile`: `.PHONY` entry + `rdna4` target
 - `rocm/ds4_rocm_matmul.cuh`: `!defined(DS4_ROCM_NO_WMMA)` guard (1 line)
@@ -80,6 +80,17 @@ cd /media/NVME_DATA/MOUNTS/Models/ds4
 make rdna4
 ```
 Produces `ds4`, `ds4-server`, `ds4-bench`, `ds4-eval`, `ds4-agent` linked against `--offload-arch=gfx1201 -DDS4_ROCM_NO_WMMA`.
+
+### 2.6 After the rebase: what the fork carries now
+
+The rebase is where this fork's history started, not what it contains today. On `rocm-rdna4-streaming` the delta additionally carries:
+
+- **RAM-disk on-demand SSD streaming** (§3) — `ram-disk-*.sh` and `ds4_ssd.*`.
+- **ROCm streaming performance** — retiring prefill model arenas before decode, a pipelined expert transfer path, decode through pinned expert pointers, VRAM shared between the KV and expert caches, and 32 GiB streaming defaults (`ds4.c`, `rocm/`).
+- **A bounded decode trace** (§3.7) — `rocm/ds4_rocm_trace.cuh` plus a mocked-GPU unit suite.
+- **An indexer score microbenchmark** — `tests/bench_indexer_score_rocm.cu`, built by `make bench-indexer-score-rocm`.
+
+`UPSTREAM.md` in this directory lists the commits and the files each one owns, and is the file to update when the delta changes. This section describes its shape; the counts live there.
 
 ---
 
@@ -145,6 +156,8 @@ There used to be a second unit, `ds4-ram-server.service`, coordinated with the S
 
 The `ExecStart` target for `ds4-server.service`. Tries `ram-disk-up.sh` first; on success, serves from the RAM copy. On **any** failure (out of RAM, mount failure, copy interrupted), it logs a `WARNING:` line to the journal and falls back to the SSD-backed `ds4flash.gguf` instead of refusing to start — a degraded-but-working server beats an outage. CLI flags (`--ctx`, `--port`, `--ssd-streaming`, ...) live in the systemd unit, not the script, and are forwarded straight through to `ds4-server`.
 
+The script also pins the ROCr runtime the streaming measurements depend on: it puts the project-local prefix `misc/rocm-local-runtime-fixed-prefix/lib` at the front of `LD_LIBRARY_PATH`, defaults `HSA_ENABLE_SDMA=1`, and exits with an error when that prefix is missing instead of silently loading whatever `/opt/rocm` provides. `misc/` is gitignored. The prefix is a published interface shared with qwen-flash, whose launcher `../qwen-3.8-flash/run-mtp-pr-test.sh` loads it as well, so both servers run one ROCr build and anything that moves the prefix has to move that launcher in the same change.
+
 #### `ds4-server.service`
 
 ```ini
@@ -198,21 +211,34 @@ cd /media/NVME_DATA/MOUNTS/Models/ds4
 - **Not persistent by design.** A reboot or an explicit `ram-disk-down.sh` fully releases the RAM; the next `up` re-copies from the NVMe source (~40 s at ~3 GB/s observed).
 - **Same GGUF, same correctness.** This is purely a change of backing storage for the identical file the SSD path already streams from — no quantization, precision, or model-behavior difference between the two modes.
 
+### 3.7 Decode trace
+
+`DS4_ROCM_DECODE_TRACE=<path>` makes a ROCm build write a bounded Chrome-trace JSON of the streaming decode path: CPU intervals for reads, uploads and waits, GPU intervals for uploads, and a metadata line carrying the dropped and incomplete record counts. The path must not already exist, because the file is opened `wx`, and the trace is written when the runtime drains at shutdown.
+
+- `DS4_ROCM_DECODE_TRACE_SKIP` (default 64) skips that many tokens before recording; `DS4_ROCM_DECODE_TRACE_TOKENS` (default 8, maximum 16) sets the window; `DS4_ROCM_TRACE_CAP` (default 32768) sets how many records and event pairs are preallocated before the window opens.
+- Recording engages only when `--ssd-streaming` is on with tensor parallelism and placement off, so every other configuration keeps the hot path it had.
+- The hooks never synchronize. The trace is collected with event queries, and `tests/test_rocm_trace.py` fails if a synchronizing CUDA/HIP call appears anywhere in the implementation, because a measurement must not change the schedule it measures.
+- GPU intervals are stream intervals, which include submission and scheduling gaps, so they are not kernel busy time; the JSON metadata says so as well.
+- `tests/rocm_trace_summary.py <trace.json>` validates a trace and prints unioned intervals. `make test-rocm-streaming-unit` runs the mocked-GPU suite.
+
 ---
 
 ## 4. Coordinating with the router/Studio via `pi-inference`
 
-ds4-server, `pi-llama-router`, and Unsloth Studio all share the one GPU. Nothing used to stop them from fighting over VRAM at the same time — for a while the only fix was manually `systemctl --user stop`-ing whichever one wasn't wanted before starting ds4. `pi-inference` (full control-plane docs: `PI_INFERENCE_CONTROL_PLANE.md` in dotfiles) now treats `ds4` as a third fully coordinated mode alongside `team` and `studio`:
+ds4-server, `pi-llama-router`, and Unsloth Studio all share the one GPU. Nothing used to stop them from fighting over VRAM at the same time — for a while the only fix was manually `systemctl --user stop`-ing whichever one wasn't wanted before starting ds4. `pi-inference` (full control-plane docs: `PI_INFERENCE_CONTROL_PLANE.md` in the `local-models` documentation set) now treats `ds4` as one of four coordinated owners of the card — `team`, `studio`, `ds4` and `qwen-flash`:
 
 ```bash
-pi-inference ds4      # stops router + Studio, starts ds4-server.service, waits for it to actually respond
-pi-inference team     # stops Studio + ds4-server.service, starts the router
-pi-inference studio   # stops router + ds4-server.service, starts Unsloth Studio
-pi-inference stop     # stops all three
-pi-inference status   # {"mode": ..., "lease": ..., "services": {"router": ..., "studio": ..., "ds4": ...}}
+pi-inference ds4      # stops the other owners, starts ds4-server.service, waits for it to actually respond
+pi-inference team     # stops the other owners, starts the router
+pi-inference studio   # stops the other owners, starts Unsloth Studio (the app itself survives other modes)
+pi-inference qwen-flash  # stops the other owners, starts the Qwen Flash server
+pi-inference stop     # stops every owner: router, ds4, qwen-flash
+pi-inference status   # {"mode": ..., "lease": ..., "services": {"router": ..., "studio": ..., "ds4": ..., "qwen": ...}, "tenants": [...]}
 ```
 
 `ds4` is a leasable mode exactly like `team` (`pi-inference acquire --mode ds4 --owner ... --ttl ...`): a remote client's held lease now blocks a local `pi-inference ds4` with a 409 conflict, the same protection `team` already had, instead of a local switch silently evicting them. `ds4-chat` (§3.4) goes through `pi-inference stop` for exactly this reason before grabbing the GPU for its own direct `./ds4` process.
+
+`qwen-flash` is the fourth owner mode, and the one this machine usually runs, so a transition into `ds4` stops it like any other owner — a comparison that needs the whole card does not have to free it by hand first. `pi-inference stop` likewise stops the router, ds4 **and** qwen-flash. Small always-on GPU holders are modelled separately, as **VRAM tenants** with declared peaks (`recognize-daemon.service`, `unsloth.service`): the manager evicts them only when a target mode cannot fit otherwise, and restores them when the card goes idle again. `pi-inference status --json` lists them under `tenants`, with the intent (`active`, `evicted`, `held`) that says whether the manager or a person stopped them.
 
 Mode switches can take up to ~90s (a cold ds4 RAM-disk allocation), so `pi-inference` streams live progress to stderr instead of blocking silently:
 
