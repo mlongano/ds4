@@ -271,11 +271,22 @@ concept removal (negative amplifies). The tool captures activations from the sam
 uses, averages target minus contrast, normalises one vector per layer, and writes both the `.f32` and
 a metadata JSON. `dir-steering/tools/run_sweep.py` is the calibration helper.
 
-**Two gaps.** This vector has no metadata JSON, so its layer list, prompt sets and build command are
-unrecorded; the verbosity vector has one. The calibration prompt sets and the sweep outputs lived in
-`/tmp` and are gone, leaving only the harness command and the table above. And `dir-steering/.gitignore`
-ignores `out/`, so the `.f32` is untracked and would not survive a fresh clone or `git clean -xdf`; a
-copy with its checksum is kept in `~/.local/opt/dir-steering/`.
+**Provenance.** The vector is antirez's, released for this purpose at
+<https://antirez.com/misc/refusal_train400_en_it_plus20_nothink_ffn_out.f32> (the announcement gave a
+wrong URL first, without the `misc/` path, and corrected it in the same thread). The published file
+was fetched again on 2026-09-29 and is byte-identical to the local copy: 704,512 bytes, sha256
+`cf84bb41c44105b53cb12566234e3e30470c9c62cf1450bcad3156dd3a28ee42`, `Last-Modified` 2026-05-11. The
+prompt set behind it is not published, so the dataset and the build command remain unknown, but the
+artifact itself does not depend on this machine keeping a copy.
+
+Upstream's README covers the surrounding ground. The directional steering section cites *Refusal in
+Language Models Is Mediated by a Single Direction* (arXiv 2406.11717), and a separate section
+documents `--prefix-file`, where a multi-turn prefix showing the assistant doing computer-security
+work carries the following security request, referenced to *Many-shot Jailbreaking*.
+
+**The local copy.** `dir-steering/.gitignore` ignores `out/`, so this `.f32` is untracked and would
+not survive a fresh clone or `git clean -xdf`. Copies of it and of the verbosity vector, with their
+checksums, are kept in `~/.local/opt/dir-steering/`, and the published original is one `curl` away.
 
 ---
 
