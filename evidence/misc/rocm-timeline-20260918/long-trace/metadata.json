@@ -1,0 +1,27 @@
+{
+  "options": {
+    "request": "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-vision-profile-20260917/long-replay/request.json",
+    "reference": "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-vision-profile-20260917/baseline/ds4-server",
+    "candidate": "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-timeline-20260918/candidate/ds4-server",
+    "model": "/mnt/ram/ds4flash.gguf",
+    "vision": "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "steering_file": "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "steering_scale": 3,
+    "candidate_env": [
+      "DS4_ROCM_DECODE_TRACE=trace.json"
+    ],
+    "reference_env": [],
+    "profile": false,
+    "tokens": 1024,
+    "seed": 123,
+    "repeats": 1,
+    "port": 18000,
+    "timeout": 3600.0,
+    "output": "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-timeline-20260918/long-trace"
+  },
+  "page_size": 4096,
+  "binary_sha256": {
+    "reference": "8c5dd43f1b7400fe26f567d65225e40956df6af8a817ebcf6d77351e15fb6073",
+    "candidate": "95af99d1d12a50802ba1057357100281aa8fe8834e760a9f7aa2c60da20a0136"
+  }
+}

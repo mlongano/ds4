@@ -1,0 +1,2 @@
+ds4: Linux rocm backend set oom_score_adj=1000
+ds4: cannot open model '/mnt/ram/ds4flash.gguf': No such file or directory

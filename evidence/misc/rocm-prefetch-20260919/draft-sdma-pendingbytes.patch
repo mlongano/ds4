@@ -1,0 +1,89 @@
+From: draft
+Subject: [DRAFT] clamp wrapped bytes_written_ indexing to the last valid uint64 entry
+
+Status: DRAFT, not validated against the real crash. The original offending
+offset is unavailable, so this reproduces and fixes the boundary arithmetic but
+is not confirmed against the assertion that actually occurred. Building and
+real-model validation are required before proposing anything for production or
+for this project's patched runtime clone.
+
+Problem
+-------
+PendingBytes() indexes bytes_written_ with a wrapped command-queue byte offset:
+
+  return bytes_queued_ - bytes_written_[WrapIntoRing(hw_read_index)];
+
+WrapIntoRing(index) = index & (kQueueSize - 1), where kQueueSize = 8 MiB, so a
+wrapped offset is always in [0, kQueueSize). bytes_written_ converts that byte
+offset to a uint64 data index with:
+
+  uint32_t convert(uint32_t index) { return (index + sizeof(uint64_t) - 1) / sizeof(uint64_t); }
+
+For a wrapped offset in the final partial uint64 region, e.g. offset 8388604,
+convert returns ceil(8388604/8) = 1048576 while data_ has exactly
+convert(kQueueSize) = 1048576 entries indexed 0..1048575. That indexes one past
+the end and reproduces the documented boundary arithmetic for hypothetical
+offset 0x7ffffc.
+
+Fix
+---
+Clamp the converted index to data_.size() - 1 only at the indexing sites
+(operator[] and fill). Leave convert and resize unchanged so that
+resize(kQueueSize) still produces exactly capacity entries and a non-power-of-two
+capacity still gets ceil(size/8) entries. A wrapped offset in the final partial
+uint64 belongs to the last entry, so clamping to capacity-1 is correct there and
+does not change behavior for any offset outside that region.
+
+--- a/amd_blit_sdma.h
++++ b/amd_blit_sdma.h
+@@ class bytes_written_ wrapper:
+     uint64_t& operator[](uint32_t index) { return data_[convert(index)]; }
+ 
+     void resize(size_t size) { data_.resize(convert(size)); }
+ 
+     void fill(uint32_t start, uint32_t stop, uint64_t value) {
+       for (uint32_t i = convert(start); i < convert(stop); i++) {
+         data_[i] = value;
+       }
+     }
+ 
+    private:
+     uint32_t convert(uint32_t index) { return (index + sizeof(uint64_t) - 1) / sizeof(uint64_t); }
+ 
+     std::vector<uint64_t> data_;
+   } bytes_written_;
++
++--- proposed change --------------------------------------------------------
++    uint64_t& operator[](uint32_t index) {
++      uint32_t idx = convert(index);
++      if (idx >= data_.size()) idx = data_.size() - 1;
++      return data_[idx];
++    }
++
++    void fill(uint32_t start, uint32_t stop, uint64_t value) {
++      uint32_t begin = convert(start);
++      if (begin >= data_.size()) begin = data_.size() - 1;
++      for (uint32_t i = begin; i < convert(stop); i++) {
++        data_[i] = value;
++      }
++    }
++---------------------------------------------------------------------------
++
++Notes and validation plan
++-------------------------
++- convert and resize stay exactly as upstream so capacity sizing is unchanged;
+  only wrapped indexing is clamped to the last valid entry.
++- Whether clamping is semantically correct at every wrap boundary should be
+  reviewed against the ring fill/operator[] call sites before trusting it; the
+  real failing offset is unavailable so this cannot be confirmed against the
+  actual assertion.
++- Even if the assertion stops occurring, whether that recovers the measured
+  ~10% steady-decode penalty is not established by this draft because the
+  document does not prove that the assertion causes that penalty rather than
+  being a separate crash.
++- Validation for this project: build a separately-loaded runtime clone and run
+  the real-model acceptance gates (exact outputs/full top-20 logprobs, steered
+  image continuation, long-generation stability) comparing patched vs unpatched
+  before proposing anything for production or for the project-local clone.
++- When upstream ships a confirmed fix, drop this draft and adopt upstream; the
+  change is small and isolated to one wrapper so it is easy to remove.

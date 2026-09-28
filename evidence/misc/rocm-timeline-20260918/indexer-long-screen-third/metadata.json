@@ -1,0 +1,27 @@
+{
+  "options": {
+    "request": "misc/rocm-vision-profile-20260917/long-replay/request.json",
+    "reference": "misc/rocm-vision-profile-20260917/baseline/ds4-server",
+    "candidate": "misc/rocm-timeline-20260918/indexer-candidate/ds4-server",
+    "model": "/mnt/ram/ds4flash.gguf",
+    "vision": "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "steering_file": "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "steering_scale": 3,
+    "candidate_env": [
+      "DS4_ROCM_INDEXER_WAVE_ROWS=1"
+    ],
+    "reference_env": [],
+    "profile": false,
+    "tokens": 256,
+    "seed": 123,
+    "repeats": 1,
+    "port": 18000,
+    "timeout": 3600.0,
+    "output": "misc/rocm-timeline-20260918/indexer-long-screen-third"
+  },
+  "page_size": 4096,
+  "binary_sha256": {
+    "reference": "8c5dd43f1b7400fe26f567d65225e40956df6af8a817ebcf6d77351e15fb6073",
+    "candidate": "32793c519a330fcaacc4e9979a0a7a659319fab76b042559f1488865c17ed0c7"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "captured_tokens": 8,
+  "position_range": [
+    1593,
+    1600
+  ],
+  "summed_interval_ms_per_token": {
+    "cpu/read": 119.26500587499989,
+    "cpu/upload_wait": 101.74601324999976,
+    "gpu_stream/upload": 99.7535503749997,
+    "gpu_stream/routed_moe": 75.54238124999999,
+    "cpu/read_jobs_wait": 65.68494224999996,
+    "gpu_stream/attn_inv_rope": 6.8628975000000025,
+    "gpu_stream/attn_output": 6.405503375000004,
+    "gpu_stream/q_path": 4.285150250000002,
+    "gpu_stream/ffn_hc_pre": 3.1052791250000027,
+    "gpu_stream/attn_hc_pre": 2.739299375,
+    "gpu_stream/shared_gate_up": 2.260722999999999,
+    "gpu_stream/shared_down": 1.8054861249999994,
+    "gpu_stream/router": 1.4680623750000001,
+    "gpu_stream/compressor_proj": 1.3072627499999991,
+    "gpu_stream/ffn_hc_post": 0.9089483750000004,
+    "gpu_stream/kv_path": 0.5106793750000004,
+    "gpu_stream/compressor_update": 0.4182941249999997,
+    "gpu_stream/indexer_compressor_proj": 0.3452580000000003,
+    "gpu_stream/indexer_compressor_update": 0.24755762499999992,
+    "gpu_stream/attn_hc_post": 0.23918274999999983,
+    "gpu_stream/ffn_norm": 0.23818175000000028,
+    "gpu_stream/compressor_indexer": 0.17223187500000003,
+    "gpu_stream/attn_norm": 0.1716215000000001,
+    "gpu_stream/compressor_quantize": 0.046235750000000006,
+    "gpu_stream/indexer_compressor_qat": 0.046084999999999994,
+    "gpu_stream/compressor_commit": 0.021465249999999998
+  },
+  "upload_GiB_per_token": 0.610565185546875,
+  "upload_interval_union_ms_per_token": 51.480665500000704,
+  "upload_GiB_per_union_second": 11.860087269984236,
+  "uncovered_gpu_interval_ms_per_token": 9.052507125004427,
+  "setup_ms": 27.538167,
+  "limits": "CPU spans overlap GPU work and each other. GPU stream intervals include submission/queueing gaps; uncovered intervals may contain uninstrumented work. Neither is exact kernel busy/device idle time. CPU/GPU clock alignment is approximate."
+}

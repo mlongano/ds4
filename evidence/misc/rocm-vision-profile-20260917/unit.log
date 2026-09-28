@@ -1,0 +1,154 @@
+python3 tests/test_rocm_stream_pipeline.py
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: streaming read-worker upload failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+test: pipelined upload wait failed: injected failure
+ROCm pipeline staging, completion and error tests: PASS
+ROCm direct-pointer policy: PASS
+Bulk upload partitioning/failure-order tests passed
+Decode model reset policy/synchronization tests passed
+Artifacts: /tmp/ds4-pipeline-unit-tjaicp65
+python3 tests/test_rocm_streaming_regression.py
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.606s
+
+OK
+python3 tests/test_rocm_server_regression.py
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK

@@ -1,0 +1,14 @@
+{
+  "uname": {
+    "system": "Linux",
+    "node": "malos-home",
+    "release": "7.2.5-4-omarchy",
+    "version": "#1 SMP PREEMPT_DYNAMIC Wed, 16 Sep 2026 04:45:18 +0000",
+    "machine": "x86_64",
+    "processor": ""
+  },
+  "page_size": 4096,
+  "rocm_packages": "rocm-core 7.2.4-1\nhsa-rocr 7.2.4-1\nhip-runtime-amd 7.2.4-1\n",
+  "runtime_environment": {},
+  "model_size": 86720111776
+}

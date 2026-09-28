@@ -1,0 +1,30 @@
+ds4: Linux rocm backend set oom_score_adj=1000
+ds4: ROCm backend initialized on AMD Radeon AI PRO R9700 (sm_120)
+ds4: rocm SSD streaming cache target 18.00 GiB; effective 18.00 GiB = 3.38 GiB prefill headroom + 14.62 GiB dynamic cache (2218 experts, 6.75 MiB each)
+ds4: SSD streaming initial rocm model map restricted to token embedding (1 spans, 0.99 GiB tensor span)
+ds4: ROCm loading model tensors into device cache
+ds4: ROCm preparing model tensor mappings
+ds4: ROCm startup model preparation covered 0.99 GiB of tensor spans in 0.000s
+ds4: ROCm mapped 0.87 GiB auxiliary model
+ds4: rocm backend initialized for graph diagnostics
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB + resident model 2.81 GiB + expert cache 14.62 GiB + prefill expert reserve 3.38 GiB = 26.53 GiB planned
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+0918 08:31:02 ds4-server: context buffers 5855.75 MiB (ctx=262144, backend=rocm, prefill_chunk=4096, raw_kv_rows=4352, compressed_kv_rows=65538)
+ds4: accelerator using managed KV cache for ctx=262144 (kv cache 3.72 GiB, context buffers 5.72 GiB); this may degrade performance but is needed for very large contexts
+ds4: directional steering enabled: /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 attn=0 ffn=3
+0918 08:31:03 ds4-server: listening on http://127.0.0.1:18000
+0918 08:31:04 ds4-server: chat ctx=0..1529:1529 TOOLS prompt start
+ds4: ROCm loading model tensors 7.87 GiB cached
+ds4: ROCm retiring prefill model ranges: 7.37 GiB
+0918 08:31:17 ds4-server: chat ctx=0..1529:1529 TOOLS prompt done 13.656s
+0918 08:31:23 ds4-server: chat ctx=1529..1579:50 gen=50 TOOLS THINKING decoding chunk=8.47 t/s avg=8.47 t/s 5.900s
+0918 08:31:28 ds4-server: chat ctx=1579..1629:50 gen=100 TOOLS decoding chunk=10.71 t/s avg=9.46 t/s 10.567s
+0918 08:31:33 ds4-server: chat ctx=1629..1679:50 gen=150 TOOLS decoding chunk=9.69 t/s avg=9.54 t/s 15.729s
+0918 08:31:38 ds4-server: chat ctx=1679..1729:50 gen=200 TOOLS decoding chunk=9.23 t/s avg=9.46 t/s 21.148s
+0918 08:31:44 ds4-server: chat ctx=1729..1779:50 gen=250 TOOLS decoding chunk=9.70 t/s avg=9.50 t/s 26.302s
+0918 08:31:49 ds4-server: chat ctx=1779..1829:50 gen=300 TOOLS decoding chunk=9.56 t/s avg=9.51 t/s 31.534s
+0918 08:31:54 ds4-server: chat ctx=1829..1879:50 gen=350 TOOLS decoding chunk=9.52 t/s avg=9.51 t/s 36.788s
+0918 08:31:57 ds4-server: chat ctx=1879..1913:34 gen=384 TOOLS decoding chunk=10.01 t/s avg=9.56 t/s 40.184s
+0918 08:31:57 ds4-server: chat ctx=0..1529:1529 gen=384 TOOLS finish=length 53.841s
+0918 08:31:57 ds4-server: shutdown requested, draining requests
+ds4: ROCm stream cache stats cleanup: selected calls=16512 slots=99072 hits=69657 misses=29415; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=29415 alloc=193.90 GiB evictions=27197 evicted=179.28 GiB; resident current=2218/14.62 GiB max=2218/14.62 GiB budget=2218

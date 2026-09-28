@@ -1,0 +1,27 @@
+{
+  "pid": 981799,
+  "args": [
+    "/usr/bin/python3",
+    "tests/rocm_server_regression.py",
+    "--request",
+    "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-vision-profile-20260917/long-replay/request.json",
+    "--reference",
+    "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-vision-profile-20260917/baseline/ds4-server",
+    "--candidate",
+    "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-timeline-20260918/candidate/ds4-server",
+    "--vision",
+    "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "--steering-file",
+    "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "--tokens",
+    "1024",
+    "--repeats",
+    "1",
+    "--timeout",
+    "3600",
+    "--candidate-env",
+    "DS4_ROCM_DECODE_TRACE=trace.json",
+    "--output",
+    "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-timeline-20260918/long-trace"
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "runtime": {
+    "fix_commit": "1a2897e7ad2d26c631db52054c674f921252a9ce",
+    "build_id": "1.18.0-local-build-1a2897e7ad",
+    "library_sha256": "1009e6f51ba351bf632867effc63bb0a30de2b17539b46a6150de781d0c3ec9f",
+    "abi_exports": 262,
+    "system_install_modified": false
+  },
+  "ring_stress": {
+    "copies": 12000000,
+    "copy_engine_status_calls": 1121405126,
+    "elapsed_seconds": 96.382781,
+    "completion_checked": true,
+    "failed": false
+  },
+  "short_server_replay": {
+    "prompt_tokens": 1529,
+    "completion_tokens_per_run": 384,
+    "pairs": 3,
+    "reference_post_first_interval_tps": [
+      9.636468551644546,
+      9.62369619086037,
+      9.579533069465956
+    ],
+    "fixed_post_first_interval_tps": [
+      9.661276792687511,
+      9.612617279686871,
+      9.598528608788115
+    ],
+    "reference_median_post_first_interval_tps": 9.62369619086037,
+    "fixed_median_post_first_interval_tps": 9.612617279686871,
+    "exact_generated_fields": true,
+    "output_sha256": "d96bbce0f2f3028344c63abc68c961d1016d69000232abb8d758b4b56c71fb08"
+  },
+  "long_server_replay_1024": {
+    "prompt_tokens": 87441,
+    "completion_tokens_per_run": 1024,
+    "pairs": 1,
+    "reference_post_first_interval_tps": 7.9156744983624145,
+    "fixed_post_first_interval_tps": 7.965976936288542,
+    "exact_generated_fields": true,
+    "output_sha256": "fd86fe8cbcce222425ac929adfc50009f1add09fba0d41c5e14ba9c1c2bf94bf"
+  },
+  "top20_logprobs": {
+    "steps_per_case": 128,
+    "cases": [
+      {
+        "name": "code",
+        "prompt_tokens": 42,
+        "exact_full_json": true,
+        "sha256": "b0ca8b462642b21ccd79f87e7c063bd9864159689609b42214e4ac8585abceb9"
+      },
+      {
+        "name": "database",
+        "prompt_tokens": 25,
+        "exact_full_json": true,
+        "sha256": "ad9773f60e3f0cc6a13bfda679bdf994e32dee97027f07e294f1c0fac184e017"
+      },
+      {
+        "name": "long",
+        "prompt_tokens": 12583,
+        "exact_full_json": true,
+        "sha256": "2a27c0dab1687f02d76e515d09697eadc68270fffe11e3fbf3fe97d9c8888014"
+      }
+    ]
+  },
+  "interactive": {
+    "two_turn_text": {
+      "completed_generations_per_runtime": 2,
+      "identical_stdout": true,
+      "sha256": "158e7aeecaae7a0552748a43b85c0b45919a3a9e929a21525d9dcea96877e7c0"
+    },
+    "image_continuation": {
+      "completed_generations_per_runtime": 1,
+      "identical_stdout": true,
+      "sha256": "a9869a29ce26362bb7241e887f27eeea4c91615569adea6439e84ab43fd74212"
+    },
+    "steered_image_text_image": {
+      "completed_generations_per_runtime": 3,
+      "identical_stdout": true,
+      "sha256": "e597f88a0c733130643db7329853d0ebfab853ea21f46ab851324055dc301511"
+    }
+  },
+  "short_prompt_2048_cap": {
+    "actual_completion_tokens": 413,
+    "finish": "stop",
+    "exact_generated_fields": true,
+    "note": "Natural stop; retained as exactness evidence but not used for the beyond-1024 stability gate."
+  },
+  "long_server_replay_1536": {
+    "prompt_tokens": 87441,
+    "completion_tokens_per_run": 1536,
+    "finish": "length",
+    "pairs": 1,
+    "reference_post_first_interval_tps": 7.906484274822157,
+    "fixed_post_first_interval_tps": 7.89711431152681,
+    "exact_generated_fields": true,
+    "output_sha256": "df03feec82c488f29e6eaf59eb7122fbe3076326f6824d7d5e0ebc7e76392177"
+  },
+  "production_deployment": {
+    "deployed": true,
+    "service_pid": 2332354,
+    "service_invocation_id": "76e108da3dd54c2990a88c8f36197567",
+    "mapped_runtime": "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-prefix/lib/libhsa-runtime64.so.1.18.0",
+    "hsa_enable_sdma": "1",
+    "smoke_prompt_tokens": 12,
+    "smoke_completion_tokens": 128,
+    "smoke_finish": "length",
+    "smoke_pswpin": 7,
+    "smoke_pswpout": 0,
+    "immediate_faults": 0
+  },
+  "acceptance": {
+    "boundary_model": true,
+    "ring_stress": true,
+    "exact_generated_outputs": true,
+    "exact_top20_logprobs": true,
+    "image_continuation": true,
+    "steered_image_text_image": true,
+    "long_context_1536_token_stability": true,
+    "material_performance_regression": false,
+    "preproduction_pass": true,
+    "production_deployed": true
+  },
+  "remaining": [
+    "Monitor the production soak and drop the patch when an upstream fix is confirmed."
+  ]
+}

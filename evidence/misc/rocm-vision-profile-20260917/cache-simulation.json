@@ -1,0 +1,14 @@
+{
+  "route_calls": 16512,
+  "capacity": 2218,
+  "lru_misses": 29415,
+  "frequency_misses_by_decay_tokens": {
+    "0": 29805,
+    "16": 28411,
+    "32": 27370,
+    "64": 28234,
+    "128": 28882,
+    "256": 29538
+  },
+  "limits": "One fixed 384-token short replay; not long-context or multi-turn throughput. Fixed capacity, pins approximated by protecting the full current selection."
+}

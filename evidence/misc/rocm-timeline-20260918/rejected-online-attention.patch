@@ -1,0 +1,243 @@
+diff --git i/rocm/ds4_rocm_attention_launch.cuh w/rocm/ds4_rocm_attention_launch.cuh
+index 3190f8b..cdd394b 100644
+--- i/rocm/ds4_rocm_attention_launch.cuh
++++ w/rocm/ds4_rocm_attention_launch.cuh
+@@ -535,6 +535,57 @@ extern "C" int ds4_gpu_attention_indexed_mixed_batch_heads_tensor(
+     if (!sinks) return 0;
+     const int32_t *topk_ptr = (const int32_t *)topk->ptr;
+     const ds4_rocm_runtime_config *cfg = cuda_runtime_config();
++    const char *online_decode_env =
++        getenv("DS4_ROCM_ATTN_INDEXED_ONLINE_DECODE");
++    if (n_tokens == 1u && head_dim == 512u && n_head <= 64u &&
++        online_decode_env && online_decode_env[0] != '\0' &&
++        online_decode_env[0] != '0') {
++        const uint32_t heads_per_group =
++            strtoul(online_decode_env, NULL, 10) == 16ul ? 16u : 32u;
++        dim3 grid(1u, (n_head + heads_per_group - 1u) / heads_per_group, 1u);
++        if (heads_per_group == 16u) {
++            attention_indexed_mixed_heads8_online_kernel<8, 16>
++                <<<grid, 512>>>((float *)heads->ptr,
++                                sinks,
++                                (const float *)q->ptr,
++                                (const float *)raw_kv->ptr,
++                                (const float *)comp_kv->ptr,
++                                topk_ptr,
++                                n_tokens,
++                                pos0,
++                                n_raw,
++                                raw_cap,
++                                raw_start,
++                                n_comp,
++                                top_k,
++                                window,
++                                ratio,
++                                n_head,
++                                head_dim);
++            return cuda_ok(cudaGetLastError(),
++                           "attention indexed online decode heads16 launch");
++        }
++        attention_indexed_mixed_heads8_online_kernel<8, 32>
++            <<<grid, 1024>>>((float *)heads->ptr,
++                             sinks,
++                             (const float *)q->ptr,
++                             (const float *)raw_kv->ptr,
++                             (const float *)comp_kv->ptr,
++                             topk_ptr,
++                             n_tokens,
++                             pos0,
++                             n_raw,
++                             raw_cap,
++                             raw_start,
++                             n_comp,
++                             top_k,
++                             window,
++                             ratio,
++                             n_head,
++                             head_dim);
++        return cuda_ok(cudaGetLastError(),
++                       "attention indexed online decode heads32 launch");
++    }
+     if (n_tokens == 1u && cfg->oldhip_attention_decode) {
+         const uint32_t rows = n_raw + (top_k < n_comp ? top_k : n_comp);
+         const size_t shmem = (size_t)(rows ? rows : 1u) * sizeof(float);
+diff --git 1/tests/bench_indexed_attention_rocm.c 2/tests/bench_indexed_attention_rocm.c
+new file mode 100644
+index 0000000..c366d5a
+--- /dev/null
++++ 2/tests/bench_indexed_attention_rocm.c
+@@ -0,0 +1,175 @@
++/* Synthetic ROCm indexed-decode attention benchmark.
++ *
++ * Compares the production old-HIP exact-order kernel with the existing
++ * multi-head online-softmax kernel. This is an investigation tool: online
++ * softmax changes arithmetic order, so numerical deltas are reported and the
++ * path remains opt-in unless full model acceptance succeeds.
++ *
++ * Usage: tests/bench_indexed_attention_rocm [warmup] [iters]
++ */
++#include <math.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#include "ds4_gpu.h"
++
++#define N_HEAD 64u
++#define HEAD_DIM 512u
++#define N_RAW 256u
++#define RAW_CAP 256u
++#define N_COMP 21876u
++#define TOP_K 512u
++#define POS0 87505u
++#define RATIO 4u
++#define WINDOW 256u
++
++static double now_sec(void) {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
++}
++
++static uint64_t next_random(uint64_t *state) {
++    *state = *state * 6364136223846793005ull + 1442695040888963407ull;
++    return *state;
++}
++
++static float random_float(uint64_t *state, float magnitude) {
++    int32_t bits = (int32_t)(next_random(state) >> 32u);
++    return ((float)bits / 2147483648.0f) * magnitude;
++}
++
++static int run_attention(ds4_gpu_tensor *heads,
++                         const float *model,
++                         ds4_gpu_tensor *q,
++                         ds4_gpu_tensor *raw,
++                         ds4_gpu_tensor *comp,
++                         ds4_gpu_tensor *topk) {
++    return ds4_gpu_attention_indexed_mixed_batch_heads_tensor(
++            heads, model, N_HEAD * sizeof(float), 0u,
++            q, raw, comp, 0u, topk,
++            1u, POS0, N_RAW, RAW_CAP, 0u, N_COMP, TOP_K,
++            WINDOW, RATIO, N_HEAD, HEAD_DIM);
++}
++
++static double time_mode(const char *mode,
++                        ds4_gpu_tensor *heads,
++                        const float *model,
++                        ds4_gpu_tensor *q,
++                        ds4_gpu_tensor *raw,
++                        ds4_gpu_tensor *comp,
++                        ds4_gpu_tensor *topk,
++                        unsigned warmup,
++                        unsigned iters) {
++    if (mode) setenv("DS4_ROCM_ATTN_INDEXED_ONLINE_DECODE", mode, 1);
++    else unsetenv("DS4_ROCM_ATTN_INDEXED_ONLINE_DECODE");
++    for (unsigned i = 0; i < warmup; i++) {
++        if (!run_attention(heads, model, q, raw, comp, topk)) return -1.0;
++    }
++    if (!ds4_gpu_synchronize()) return -1.0;
++    double total = 0.0;
++    for (unsigned i = 0; i < iters; i++) {
++        double start = now_sec();
++        if (!run_attention(heads, model, q, raw, comp, topk) ||
++            !ds4_gpu_synchronize()) return -1.0;
++        total += now_sec() - start;
++    }
++    return total * 1000.0 / (double)iters;
++}
++
++static int compare_mode(const char *mode,
++                        const float *reference,
++                        float *actual,
++                        ds4_gpu_tensor *heads,
++                        const float *model,
++                        ds4_gpu_tensor *q,
++                        ds4_gpu_tensor *raw,
++                        ds4_gpu_tensor *comp,
++                        ds4_gpu_tensor *topk,
++                        double milliseconds) {
++    const size_t count = N_HEAD * HEAD_DIM;
++    setenv("DS4_ROCM_ATTN_INDEXED_ONLINE_DECODE", mode, 1);
++    if (!run_attention(heads, model, q, raw, comp, topk) ||
++        !ds4_gpu_synchronize() ||
++        !ds4_gpu_tensor_read(heads, 0u, actual, count * sizeof(float))) return 0;
++    double square = 0.0;
++    float max_abs = 0.0f, max_rel = 0.0f;
++    size_t exact = 0;
++    for (size_t i = 0; i < count; i++) {
++        if (memcmp(reference + i, actual + i, sizeof(float)) == 0) exact++;
++        float delta = fabsf(reference[i] - actual[i]);
++        float relative = delta / fmaxf(fabsf(reference[i]), 1.0e-7f);
++        if (delta > max_abs) max_abs = delta;
++        if (relative > max_rel) max_rel = relative;
++        square += (double)delta * delta;
++    }
++    printf("{\"variant\":\"online-%s\",\"mean_ms\":%.6f,"
++           "\"exact_values\":%zu,\"values\":%zu,\"max_abs\":%.9g,"
++           "\"max_rel\":%.9g,\"rmse\":%.9g}\n",
++           mode, milliseconds, exact, count, max_abs, max_rel,
++           sqrt(square / (double)count));
++    return 1;
++}
++
++int main(int argc, char **argv) {
++    const unsigned warmup = argc > 1 ? (unsigned)strtoul(argv[1], NULL, 10) : 5u;
++    const unsigned iters = argc > 2 ? (unsigned)strtoul(argv[2], NULL, 10) : 20u;
++    const size_t q_count = N_HEAD * HEAD_DIM;
++    const size_t raw_count = RAW_CAP * HEAD_DIM;
++    const size_t comp_count = (size_t)N_COMP * HEAD_DIM;
++    float *model = calloc(N_HEAD, sizeof(float));
++    float *q_host = malloc(q_count * sizeof(float));
++    float *raw_host = malloc(raw_count * sizeof(float));
++    float *comp_host = malloc(comp_count * sizeof(float));
++    int32_t *topk_host = malloc(TOP_K * sizeof(int32_t));
++    float *reference = malloc(q_count * sizeof(float));
++    float *actual = malloc(q_count * sizeof(float));
++    if (!model || !q_host || !raw_host || !comp_host || !topk_host ||
++        !reference || !actual) return 1;
++
++    uint64_t state = 0x243f6a8885a308d3ull;
++    for (size_t i = 0; i < N_HEAD; i++) model[i] = random_float(&state, 0.25f);
++    for (size_t i = 0; i < q_count; i++) q_host[i] = random_float(&state, 0.125f);
++    for (size_t i = 0; i < raw_count; i++) raw_host[i] = random_float(&state, 0.125f);
++    for (size_t i = 0; i < comp_count; i++) comp_host[i] = random_float(&state, 0.125f);
++    /* Deterministic unique, deliberately non-monotonic compressed rows. */
++    uint32_t start = (uint32_t)(next_random(&state) % N_COMP);
++    uint32_t step = 104729u;
++    for (uint32_t i = 0; i < TOP_K; i++) topk_host[i] = (int32_t)((start + (uint64_t)i * step) % N_COMP);
++
++    if (!ds4_gpu_init()) return 1;
++    ds4_gpu_set_quality(false);
++    ds4_gpu_set_ssd_streaming(false);
++    ds4_gpu_tensor *heads = ds4_gpu_tensor_alloc(q_count * sizeof(float));
++    ds4_gpu_tensor *q = ds4_gpu_tensor_alloc(q_count * sizeof(float));
++    ds4_gpu_tensor *raw = ds4_gpu_tensor_alloc(raw_count * sizeof(float));
++    ds4_gpu_tensor *comp = ds4_gpu_tensor_alloc(comp_count * sizeof(float));
++    ds4_gpu_tensor *topk = ds4_gpu_tensor_alloc(TOP_K * sizeof(int32_t));
++    if (!heads || !q || !raw || !comp || !topk ||
++        !ds4_gpu_tensor_write(q, 0u, q_host, q_count * sizeof(float)) ||
++        !ds4_gpu_tensor_write(raw, 0u, raw_host, raw_count * sizeof(float)) ||
++        !ds4_gpu_tensor_write(comp, 0u, comp_host, comp_count * sizeof(float)) ||
++        !ds4_gpu_tensor_write(topk, 0u, topk_host, TOP_K * sizeof(int32_t))) return 1;
++
++    unsetenv("DS4_ROCM_ATTN_INDEXED_ONLINE_DECODE");
++    if (!run_attention(heads, model, q, raw, comp, topk) ||
++        !ds4_gpu_synchronize() ||
++        !ds4_gpu_tensor_read(heads, 0u, reference, q_count * sizeof(float))) return 1;
++    double reference_ms = time_mode(NULL, heads, model, q, raw, comp, topk, warmup, iters);
++    double online16_ms = time_mode("16", heads, model, q, raw, comp, topk, warmup, iters);
++    double online32_ms = time_mode("32", heads, model, q, raw, comp, topk, warmup, iters);
++    if (reference_ms < 0.0 || online16_ms < 0.0 || online32_ms < 0.0) return 1;
++    printf("{\"variant\":\"reference\",\"mean_ms\":%.6f,"
++           "\"exact_values\":%zu,\"values\":%zu,\"max_abs\":0,"
++           "\"max_rel\":0,\"rmse\":0}\n",
++           reference_ms, q_count, q_count);
++    if (!compare_mode("16", reference, actual, heads, model, q, raw, comp, topk, online16_ms) ||
++        !compare_mode("32", reference, actual, heads, model, q, raw, comp, topk, online32_ms)) return 1;
++
++    ds4_gpu_cleanup();
++    free(actual); free(reference); free(topk_host); free(comp_host);
++    free(raw_host); free(q_host); free(model);
++    return 0;
++}

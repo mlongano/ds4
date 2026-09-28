@@ -1,0 +1,100 @@
+                #14 0x0000558d021a5b57 _ZL32cuda_stream_read_pipeline_workerPv (ds4-server + 0x172db57)
+                #15 0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #16 0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                
+                Stack trace of thread 732913:
+                #0  0x00007fa68daa0952 n/a (libc.so.6 + 0xa0952)
+                #1  0x00007fa68da94cd9 n/a (libc.so.6 + 0x94cd9)
+                #2  0x00007fa68da9754c pthread_cond_wait (libc.so.6 + 0x9754c)
+                #3  0x0000558d0203c7b5 metal_graph_selected_async_load_worker_main (ds4-server + 0x15c47b5)
+                #4  0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #5  0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                
+                Stack trace of thread 938363:
+                #0  0x00007fa68daa0952 n/a (libc.so.6 + 0xa0952)
+                #1  0x00007fa68da94cd9 n/a (libc.so.6 + 0x94cd9)
+                #2  0x00007fa68da97762 pthread_cond_timedwait (libc.so.6 + 0x97762)
+                #3  0x0000558d01ff4fea wait_for_job_or_disconnect (ds4-server + 0x157cfea)
+                #4  0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #5  0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                
+                Stack trace of thread 510472:
+                #0  0x00007fa68daa0952 n/a (libc.so.6 + 0xa0952)
+                #1  0x00007fa68da94cd9 n/a (libc.so.6 + 0x94cd9)
+                #2  0x00007fa68da9754c pthread_cond_wait (libc.so.6 + 0x9754c)
+                #3  0x0000558d021a537b _ZL26cuda_stream_read_jobs_waitP20cuda_stream_read_jobj (ds4-server + 0x172d37b)
+                #4  0x0000558d0219a942 _ZL43cuda_stream_selected_finish_pending_missingj (ds4-server + 0x1722942)
+                #5  0x0000558d021886cc _ZL17routed_moe_launchP14ds4_gpu_tensorS0_S0_S0_S0_PKvmmmmjjmmmmjjjPKS_S4_jjfS4_jjb (ds4-server + 0x17106cc)
+                #6  0x0000558d02183f71 ds4_gpu_routed_moe_one_tensor (ds4-server + 0x170bf71)
+                #7  0x0000558d020df6d3 metal_graph_encode_decode_layer_phase (ds4-server + 0x16676d3)
+                #8  0x0000558d020e3e20 metal_graph_encode_decode_layer (ds4-server + 0x166be20)
+                #9  0x0000558d0210b341 ds4_session_eval_internal (ds4-server + 0x1693341)
+                #10 0x0000558d02134005 ds4_session_eval_internal (ds4-server + 0x16bc005)
+                #11 0x0000558d01fe0385 server_eval_token (ds4-server + 0x1568385)
+                #12 0x0000558d01fe6dce generate_job (ds4-server + 0x156edce)
+                #13 0x0000558d01fe6e91 worker_main (ds4-server + 0x156ee91)
+                #14 0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #15 0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                
+                Stack trace of thread 508908:
+                #0  0x00007fa68db1be1d ioctl (libc.so.6 + 0x11be1d)
+                #1  0x00007fa660957661 n/a (libhsa-runtime64.so.1 + 0x157661)
+                #2  0x00007fa66094ca87 n/a (libhsa-runtime64.so.1 + 0x14ca87)
+                #3  0x00007fa660898795 n/a (libhsa-runtime64.so.1 + 0x98795)
+                #4  0x00007fa6608feec1 n/a (libhsa-runtime64.so.1 + 0xfeec1)
+                #5  0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #6  0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                
+                Stack trace of thread 508873:
+                #0  0x00007fa68daa0952 n/a (libc.so.6 + 0xa0952)
+                #1  0x00007fa68db22625 accept (libc.so.6 + 0x122625)
+                #2  0x0000558d01ff7359 main (ds4-server + 0x157f359)
+                #3  0x00007fa68da27781 n/a (libc.so.6 + 0x27781)
+                #4  0x00007fa68da278b9 __libc_start_main (libc.so.6 + 0x278b9)
+                #5  0x0000558d01fc24b5 _start (ds4-server + 0x154a4b5)
+                
+                Stack trace of thread 508909:
+                #0  0x00007fa68db1be1d ioctl (libc.so.6 + 0x11be1d)
+                #1  0x00007fa660957661 n/a (libhsa-runtime64.so.1 + 0x157661)
+                #2  0x00007fa66094ca87 n/a (libhsa-runtime64.so.1 + 0x14ca87)
+                #3  0x00007fa6608bf304 n/a (libhsa-runtime64.so.1 + 0xbf304)
+                #4  0x00007fa66089809a n/a (libhsa-runtime64.so.1 + 0x9809a)
+                #5  0x00007fa6608feec1 n/a (libhsa-runtime64.so.1 + 0xfeec1)
+                #6  0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #7  0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                
+                Stack trace of thread 508922:
+                #0  0x00007fa68daa0952 n/a (libc.so.6 + 0xa0952)
+                #1  0x00007fa68daf199a __libc_pread (libc.so.6 + 0xf199a)
+                #2  0x0000558d021a6645 _ZL15cuda_pread_fulliPvmm (ds4-server + 0x172e645)
+                #3  0x0000558d021a58d3 _ZL32cuda_stream_read_pipeline_workerPv (ds4-server + 0x172d8d3)
+                #4  0x00007fa68da980a2 n/a (libc.so.6 + 0x980a2)
+                #5  0x00007fa68db2080c n/a (libc.so.6 + 0x12080c)
+                ELF object binary architecture: AMD x86-64
+
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.archlinux.org>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+
+warning: File /media/NVME_DATA/MOUNTS/Models/ds4/ds4-server doesn't match build-id from core-file during file-backed mapping processing
+[New LWP 508921]
+[New LWP 508923]
+[New LWP 508924]
+[New LWP 732913]
+[New LWP 938363]
+[New LWP 510472]
+[New LWP 508908]
+[New LWP 508873]
+[New LWP 508909]
+[New LWP 508922]
+Core was generated by `/media/NVME_DATA/MOUNTS/Models/ds4/ds4-server -m /mnt/ram/ds4flash.gguf --ctx 262144 --port 8000 --ssd-streaming --ssd-streaming-cold --ssd-streaming-cache-experts 18GB --vision /media/NVME_DATA/MOUNTS/Models/ds4/gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf --dir-steering-file /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 --dir-steering-ffn 3'.
+Program terminated with signal SIGABRT, Aborted.
+#0  0x00007fa68da9a17c in ?? ()
+[Current thread is 1 (LWP 508921)]
+add symbol table from file "/home/mauro/.cache/debuginfod_client/2e2d3183cee7ff4087f70e26daa249261f2092b1/debuginfo" at
+	.text_addr = 0x7fa66080f040
+/tmp/ds4-rocr-core-manual.gdb:10: Error in sourced command file:
+You can't do that without a process to debug.

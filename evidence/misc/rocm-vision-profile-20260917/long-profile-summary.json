@@ -1,0 +1,226 @@
+{
+  "diagnostic_only": true,
+  "steady_positions": 974,
+  "layer_position_pairs": 41882,
+  "stage_ms_per_token": {
+    "routed_moe": 56.54146817248483,
+    "compressor_indexer": 22.418236139637227,
+    "attn_inv_rope": 16.493249486653063,
+    "attn_output": 7.1639260780280685,
+    "q_path": 5.316468172485271,
+    "ffn_hc_pre": 3.7535882956867166,
+    "attn_hc_pre": 3.7299599589319863,
+    "shared_gate_up": 3.384125256673387,
+    "shared_down": 2.800853182751915,
+    "router": 2.3131632443525874,
+    "compressor_proj": 2.229275154004069,
+    "ffn_hc_post": 1.91343121149853,
+    "kv_path": 1.513719712526278,
+    "compressor_update": 1.3472977412729674,
+    "indexer_compressor_proj": 0.7855934291579658,
+    "indexer_compressor_update": 0.7052895277208567,
+    "attn_norm": 0.23064271047217233,
+    "ffn_norm": 0.20387268993831997,
+    "indexer_compressor_qat": 0.15824024640656956,
+    "attn_hc_post": 0.15636652977405097,
+    "compressor_quantize": 0.1563110882956902,
+    "compressor_commit": 0.012749486652978042
+  },
+  "read_snapshots": [
+    {
+      "jobs": 10419.0,
+      "GiB": 81.18,
+      "worker_read_ms": 17602.269,
+      "worker_upload_ms": 25093.397,
+      "host_wait_ms": 6857.021
+    },
+    {
+      "jobs": 20906.0,
+      "GiB": 162.89,
+      "worker_read_ms": 34955.272,
+      "worker_upload_ms": 50107.667,
+      "host_wait_ms": 13692.665
+    },
+    {
+      "jobs": 31393.0,
+      "GiB": 244.59,
+      "worker_read_ms": 52276.71,
+      "worker_upload_ms": 74998.553,
+      "host_wait_ms": 20496.252
+    },
+    {
+      "jobs": 41880.0,
+      "GiB": 326.3,
+      "worker_read_ms": 69958.564,
+      "worker_upload_ms": 100009.729,
+      "host_wait_ms": 27328.573
+    },
+    {
+      "jobs": 52367.0,
+      "GiB": 408.0,
+      "worker_read_ms": 87883.419,
+      "worker_upload_ms": 125213.098,
+      "host_wait_ms": 34219.721
+    },
+    {
+      "jobs": 62854.0,
+      "GiB": 489.71,
+      "worker_read_ms": 105844.088,
+      "worker_upload_ms": 150364.707,
+      "host_wait_ms": 41096.245
+    },
+    {
+      "jobs": 73341.0,
+      "GiB": 571.41,
+      "worker_read_ms": 123179.232,
+      "worker_upload_ms": 175259.41,
+      "host_wait_ms": 47893.677
+    },
+    {
+      "jobs": 83828.0,
+      "GiB": 653.12,
+      "worker_read_ms": 140843.596,
+      "worker_upload_ms": 200277.158,
+      "host_wait_ms": 54736.172
+    },
+    {
+      "jobs": 94315.0,
+      "GiB": 734.83,
+      "worker_read_ms": 158655.0,
+      "worker_upload_ms": 225352.929,
+      "host_wait_ms": 61594.086
+    },
+    {
+      "jobs": 104802.0,
+      "GiB": 816.53,
+      "worker_read_ms": 176104.759,
+      "worker_upload_ms": 250239.231,
+      "host_wait_ms": 68393.789
+    },
+    {
+      "jobs": 115289.0,
+      "GiB": 898.24,
+      "worker_read_ms": 193619.661,
+      "worker_upload_ms": 275175.641,
+      "host_wait_ms": 75211.734
+    },
+    {
+      "jobs": 125776.0,
+      "GiB": 979.94,
+      "worker_read_ms": 211297.383,
+      "worker_upload_ms": 300215.416,
+      "host_wait_ms": 82054.476
+    },
+    {
+      "jobs": 136263.0,
+      "GiB": 1061.65,
+      "worker_read_ms": 228894.655,
+      "worker_upload_ms": 325206.811,
+      "host_wait_ms": 88884.109
+    },
+    {
+      "jobs": 146750.0,
+      "GiB": 1143.35,
+      "worker_read_ms": 246482.53,
+      "worker_upload_ms": 350250.535,
+      "host_wait_ms": 95726.914
+    },
+    {
+      "jobs": 157237.0,
+      "GiB": 1225.06,
+      "worker_read_ms": 264290.08,
+      "worker_upload_ms": 375247.442,
+      "host_wait_ms": 102566.155
+    },
+    {
+      "jobs": 167724.0,
+      "GiB": 1306.76,
+      "worker_read_ms": 281769.133,
+      "worker_upload_ms": 400179.49,
+      "host_wait_ms": 109377.732
+    },
+    {
+      "jobs": 178211.0,
+      "GiB": 1388.47,
+      "worker_read_ms": 299474.956,
+      "worker_upload_ms": 425089.601,
+      "host_wait_ms": 116177.853
+    },
+    {
+      "jobs": 188698.0,
+      "GiB": 1470.17,
+      "worker_read_ms": 317383.328,
+      "worker_upload_ms": 450089.002,
+      "host_wait_ms": 123009.763
+    },
+    {
+      "jobs": 199185.0,
+      "GiB": 1551.88,
+      "worker_read_ms": 335501.477,
+      "worker_upload_ms": 475231.122,
+      "host_wait_ms": 129876.399
+    },
+    {
+      "jobs": 209672.0,
+      "GiB": 1633.59,
+      "worker_read_ms": 353504.045,
+      "worker_upload_ms": 500425.286,
+      "host_wait_ms": 136763.216
+    },
+    {
+      "jobs": 220159.0,
+      "GiB": 1715.29,
+      "worker_read_ms": 371445.522,
+      "worker_upload_ms": 525414.708,
+      "host_wait_ms": 143596.867
+    },
+    {
+      "jobs": 230646.0,
+      "GiB": 1797.0,
+      "worker_read_ms": 389393.003,
+      "worker_upload_ms": 550506.61,
+      "host_wait_ms": 150457.445
+    },
+    {
+      "jobs": 422189.0,
+      "GiB": 2223.67,
+      "worker_read_ms": 474628.274,
+      "worker_upload_ms": 650408.865,
+      "host_wait_ms": 196163.116
+    }
+  ],
+  "decode_read_delta": {
+    "jobs": 191543.0,
+    "GiB": 426.6700000000001,
+    "worker_read_ms": 85235.27099999995,
+    "worker_upload_ms": 99902.255,
+    "host_wait_ms": 45705.671
+  },
+  "cache_snapshots": [
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats cleanup: selected calls=44032 slots=264192 hits=200702 misses=63490; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=63490 alloc=418.51 GiB evictions=61279 evicted=403.94 GiB; resident current=2211/14.57 GiB max=2211/14.57 GiB budget=2218"
+  ],
+  "routed_gpu_event_profile": "ds4: ROCm Q2 decode MoE profile calls=44032 split=44032 q8_gateup=0 q8_down=0 finish_missing=45058.687 ms gate_resident=3790.942 ms gate_missing=1814.066 ms gate_full=0.000 ms mid_quant=0.000 ms down=3545.986 ms avg_sum=1.231 ms",
+  "limits": "Stage fences use the compute stream, preserving streaming eligibility but perturbing scheduling. Stage totals include host overhead. Routed GPU event totals include the first interval. Pipelined read/upload worker totals and host waits overlap and must not be added together."
+}

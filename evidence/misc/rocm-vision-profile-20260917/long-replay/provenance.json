@@ -1,0 +1,28 @@
+{
+  "commit": "c229363726b88b86bd547b3f930f1323e4139f1e",
+  "source_sha256": {
+    "rocm/ds4_rocm_runtime.cuh": "59e3dccaf0c342cc129be108bb5a92d8ba9d2993823905fa975a04a16e49ca1d",
+    "rocm/ds4_rocm_moe_launch.cuh": "267aeca06364c06168e25f94d5dca7a503b873172c0b93962b75abcde2e23c74"
+  },
+  "request_sha256": "e7f3d66a10af9e03de1376785bd729ebcc718f7062c2411432790cf19d1da0ea",
+  "sizing": [
+    {
+      "characters": 436035,
+      "raw_tokens": 114041
+    },
+    {
+      "characters": 331879,
+      "raw_tokens": 87468
+    },
+    {
+      "characters": 329344,
+      "raw_tokens": 86969
+    },
+    {
+      "characters": 328704,
+      "raw_tokens": 86830
+    }
+  ],
+  "raw_tool_excerpt_tokens": 86830,
+  "limits": "New representative coding review, not an exact user-session replay. Actual server prompt_tokens includes chat/tool formatting and must be read from completed runs. Vision encoder resident; this request has no image. Thinking/tools enabled, temperature 1, top_p 1, seed 123."
+}

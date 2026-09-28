@@ -1,0 +1,4 @@
+/read /media/NVME_DATA/MOUNTS/Models/ds4/tests/vision-fixtures/glm53/earth.jpg
+Qual è la capitale d’Italia? Rispondi in una frase.
+/read /media/NVME_DATA/MOUNTS/Models/ds4/tests/vision-fixtures/glm53/text.png
+/quit

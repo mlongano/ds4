@@ -1,0 +1,3 @@
+0-reference 7.64 8.032441706308976
+0-candidate 7.78 8.173305824472305
+Exact generated-field comparisons passed. Results: misc/rocm-prefetch-20260919/long-route

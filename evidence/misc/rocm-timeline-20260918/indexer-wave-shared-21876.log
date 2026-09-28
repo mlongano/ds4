@@ -1,0 +1,1 @@
+bench-indexer: device=AMD Radeon AI PRO R9700 n_comp=21876 warmup=15 iters=100

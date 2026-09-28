@@ -1,0 +1,83 @@
+{
+  "source": "misc/rocm-prefetch-20260919/long-route/0-reference/server.log",
+  "tokens": 256,
+  "route_calls": 11008,
+  "base_capacity": 2211,
+  "base_misses": 15986,
+  "slot_MiB": 6.75,
+  "results": [
+    {
+      "capacity": 2211,
+      "extra_slots": 0,
+      "extra_GiB": 0.0,
+      "misses": 15986,
+      "miss_reduction": 0.0,
+      "saved_MiB_per_token": 0.0,
+      "ideal_transfer_ms_saved_per_token": 0.0
+    },
+    {
+      "capacity": 2243,
+      "extra_slots": 32,
+      "extra_GiB": 0.2109375,
+      "misses": 15772,
+      "miss_reduction": 0.013386713374202427,
+      "saved_MiB_per_token": 5.642578125,
+      "ideal_transfer_ms_saved_per_token": 0.440826416015625
+    },
+    {
+      "capacity": 2275,
+      "extra_slots": 64,
+      "extra_GiB": 0.421875,
+      "misses": 15626,
+      "miss_reduction": 0.02251970474164894,
+      "saved_MiB_per_token": 9.4921875,
+      "ideal_transfer_ms_saved_per_token": 0.7415771484375
+    },
+    {
+      "capacity": 2294,
+      "extra_slots": 83,
+      "extra_GiB": 0.547119140625,
+      "misses": 15470,
+      "miss_reduction": 0.032278243463030154,
+      "saved_MiB_per_token": 13.60546875,
+      "ideal_transfer_ms_saved_per_token": 1.06292724609375
+    },
+    {
+      "capacity": 2339,
+      "extra_slots": 128,
+      "extra_GiB": 0.84375,
+      "misses": 15235,
+      "miss_reduction": 0.04697860628049543,
+      "saved_MiB_per_token": 19.8017578125,
+      "ideal_transfer_ms_saved_per_token": 1.5470123291015625
+    },
+    {
+      "capacity": 2467,
+      "extra_slots": 256,
+      "extra_GiB": 1.6875,
+      "misses": 14690,
+      "miss_reduction": 0.08107093706993619,
+      "saved_MiB_per_token": 34.171875,
+      "ideal_transfer_ms_saved_per_token": 2.669677734375
+    },
+    {
+      "capacity": 2595,
+      "extra_slots": 384,
+      "extra_GiB": 2.53125,
+      "misses": 14083,
+      "miss_reduction": 0.11904166145377205,
+      "saved_MiB_per_token": 50.1767578125,
+      "ideal_transfer_ms_saved_per_token": 3.920059204101562
+    },
+    {
+      "capacity": 2723,
+      "extra_slots": 512,
+      "extra_GiB": 3.375,
+      "misses": 13479,
+      "miss_reduction": 0.1568247216314275,
+      "saved_MiB_per_token": 66.1025390625,
+      "ideal_transfer_ms_saved_per_token": 5.1642608642578125
+    }
+  ],
+  "limits": "Miss/byte simulation only; does not prove VRAM availability or end-to-end throughput."
+}

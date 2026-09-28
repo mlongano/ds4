@@ -1,0 +1,3 @@
+0-reference 9.15 9.338477884023932
+0-candidate 9.23 9.37491228562607
+Exact generated-field comparisons passed. Results: misc/rocm-timeline-20260918/short-trace

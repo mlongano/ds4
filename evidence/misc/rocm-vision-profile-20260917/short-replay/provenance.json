@@ -1,0 +1,34 @@
+{
+  "source": "/home/mauro/.pi/agent/sessions/--home-mauro-Develop-MACHINE_LEARNING-docs--/2026-09-07T05-43-28-008Z_01a07a64-9808-7439-94ab-8223f2ea2205.jsonl",
+  "cutoff": "2026-09-07T06:58:20.349Z",
+  "selected_messages": [
+    {
+      "line": 7,
+      "timestamp": "2026-09-07T05:45:13.602Z",
+      "role": "user"
+    },
+    {
+      "line": 8,
+      "timestamp": "2026-09-07T05:47:53.589Z",
+      "role": "assistant"
+    },
+    {
+      "line": 9,
+      "timestamp": "2026-09-07T05:47:53.609Z",
+      "role": "toolResult"
+    },
+    {
+      "line": 10,
+      "timestamp": "2026-09-07T05:48:20.845Z",
+      "role": "assistant"
+    },
+    {
+      "line": 11,
+      "timestamp": "2026-09-07T05:48:20.855Z",
+      "role": "toolResult"
+    }
+  ],
+  "request_sha256": "a0fe44af450d4f24d8f26a2500e0bc75a92be7bc786f6de210a86486d75ce464",
+  "reconstruction": "Original conversion recovered from entry 1441; original run cutoff from entry 1451 of the ds4 session.",
+  "limits": "Original Pi system prompt and tool schemas were not saved. This uses the same representative substitutes as the earlier replay. The deleted request bytes cannot be compared. Earlier measurements reported 1529 input tokens; not yet remeasured."
+}

@@ -1,0 +1,29 @@
+{
+  "options": {
+    "request": "misc/rocm-vision-profile-20260917/short-replay/request.json",
+    "reference": "./ds4-server",
+    "candidate": "misc/rocm-prefetch-20260919/run-ds4-server-fixed-rocr.sh",
+    "model": "/mnt/ram/ds4flash.gguf",
+    "vision": "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "steering_file": "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "steering_scale": 3.0,
+    "candidate_env": [
+      "HSA_ENABLE_SDMA=1"
+    ],
+    "reference_env": [
+      "HSA_ENABLE_SDMA=1"
+    ],
+    "profile": false,
+    "tokens": 384,
+    "seed": 123,
+    "repeats": 3,
+    "port": 18000,
+    "timeout": 3600.0,
+    "output": "misc/rocm-prefetch-20260919/fixed-short-exact"
+  },
+  "page_size": 4096,
+  "binary_sha256": {
+    "reference": "95af99d1d12a50802ba1057357100281aa8fe8834e760a9f7aa2c60da20a0136",
+    "candidate": "2787096e26e924da70833aee7a9c8cf61eb7008503966d45e1cbbfb1731b3815"
+  }
+}

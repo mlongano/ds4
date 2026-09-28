@@ -1,0 +1,41 @@
+[
+  {
+    "name": "0-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/ds4-server",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ctx",
+      "262144",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18000",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ssd-streaming-cache-experts",
+      "18GB",
+      "--vision",
+      "/media/NVME_DATA/MOUNTS/Models/ds4/gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+      "--dir-steering-file",
+      "/media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+      "--dir-steering-ffn",
+      "3.0"
+    ],
+    "ds4_environment": {
+      "DS4_ROCM_STREAM_FREE_RESERVE_GB": "2",
+      "DS4_SSD_AUTO_CACHE_PCT": "65"
+    },
+    "hsa_environment": {
+      "HSA_ENABLE_SDMA": "1"
+    },
+    "error": "RuntimeError('Server exited during startup')",
+    "exit_code": 1,
+    "wall_seconds": 0.10299282599589787,
+    "system_vmstat_delta": {
+      "pswpin": 0,
+      "pswpout": 0,
+      "pgmajfault": 0
+    }
+  }
+]

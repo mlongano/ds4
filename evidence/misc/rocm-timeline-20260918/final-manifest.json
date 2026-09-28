@@ -1,0 +1,45 @@
+{
+  "head": "c229363726b88b86bd547b3f930f1323e4139f1e",
+  "branch": "rocm-rdna4-streaming",
+  "status": "bounded pass complete; no performance optimization accepted",
+  "candidate_1": {
+    "name": "bit-exact indexer wave-row scorer",
+    "paired_steady_changes_percent": [
+      2.1866,
+      0.362,
+      -0.2875
+    ],
+    "mean_change_percent": 0.7441,
+    "median_change_percent": 0.4332,
+    "accepted": false,
+    "production_dispatch_removed": true
+  },
+  "rejected_before_model_screen": [
+    "wider indexer blocks",
+    "online indexed attention",
+    "transfer scheduling"
+  ],
+  "tests": [
+    "make test-rocm-streaming-unit",
+    "make rdna4 -j16 (gfx1201)",
+    "make test-rocm-q8-prefill"
+  ],
+  "tests_passed": true,
+  "model_processes_running": false,
+  "production_services_restarted": false,
+  "sha256": {
+    "rocm/ds4_rocm_trace.h": "456995009f7374b0ebcf70de40b20ff3a8e4d6ab8d8178fc508487b50ab8c1e7",
+    "rocm/ds4_rocm_trace.cuh": "040a004ae98b595622680bb3ae366838718dbc81666609751b6cccfa96f2593c",
+    "tests/bench_indexer_score_rocm.cu": "f743a044083832b7f88d31b6a2220052369b478a0e4f49a11f664865a7389855",
+    "tests/rocm_trace_summary.py": "d23d741663864b7a8decd7074d77d440fe376f0957f03132fcd6b889f2202074",
+    "tests/test_rocm_trace.c": "4eb02784c856004130e745b9cb8d0f08ceedcdf5894379e86c0bd6df84bff1c8",
+    "tests/test_rocm_trace.py": "3b8ea23d7459addb01bc5b85b7cf67151d9944b817af633917b4e2b39210f541",
+    "Makefile": "70ac9f5340d133fd1de7b3b5a15e40a74229dc9fc3a5fdb81d8c964d4a8f5fdf",
+    "ROCM_STREAMING_PLAN.md": "104f2379afb334ca95b178d074b28f04f13a5a918e075693375b21f09b246872",
+    "ds4.c": "470ee2286d4115f7e9ce211da4fff47c14bd85b14d114cf19ceeab4918d6c40d",
+    "ds4_rocm.h": "b9b7180b307aea4219b6fb2ca38fa3d32dd4be827b6c2b9e13be5cf4aea0efab",
+    "rocm/ds4_rocm_runtime.cuh": "173dd35933b8f179b10e67471030746b7367c6606b61bc2f4d700572b6d80a09",
+    "tests/test_rocm_stream_pipeline.c": "6d64178b474e5a88400929169c5da73c6de39ce447ec1c3f5cb08fc6cd40cb89",
+    "misc/rocm-timeline-20260918/final-checkout.patch": "f60ba692f5205358f1e59ec61dc0f2322b76e5b08dd731a358fd93159cbbaff4"
+  }
+}

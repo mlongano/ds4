@@ -16,6 +16,15 @@ next intake merge leaves both sets side by side with no collisions.
 | [`UPSTREAM.md`](UPSTREAM.md) | What the local delta is, how to judge what upstream is worth taking, and the refresh-first intake procedure with its completion criteria |
 | [`DS4_ENGINE.md`](DS4_ENGINE.md) | What the engine is, how the R9700 port was done, the on-demand RAM disk, coordination through `pi-inference`, the public endpoint, and context/cache tuning |
 | [`PERFORMANCE_REFERENCE.md`](PERFORMANCE_REFERENCE.md) | The measured landscape: hardware characterisation, the prefill/decode frontier, accepted and rejected tuning with the numbers that decided them, known failure modes and their workarounds, the live environment knobs, and the inventory of evidence that is not in git |
+| [`SESSION_SUMMARY_2026-09-04_2026-09-17.md`](SESSION_SUMMARY_2026-09-04_2026-09-17.md) | Narrative of the first two weeks: the rebase, the performance work one variable at a time, why the server was slower than the CLI, the September 7 crash, the thinking loops, the upstream and model investigations |
+| [`HANDOFF_VISION_EXP_PROFILING.md`](HANDOFF_VISION_EXP_PROFILING.md) | The September 17 task statement for the bounded profiling pass, and the protocol for resuming after a killed turn without redoing reconnaissance |
+
+Two directories outside `docs/` hold what those documents cite:
+
+- [`../evidence/`](../evidence/README.md) — the small artifacts (results, metadata, provenance,
+  logs, experiment patches) copied out of the untracked run directories under `misc/`.
+- [`../rocm/patches/`](../rocm/patches/README.md) — the local patch to ROCr that the loaded
+  runtime was built from, its recipe, and its checksums.
 
 Paths quoted in these documents are relative to the repository root (`rocm/...`, `ds4.c`,
 `ram-disk-up.sh`, `tests/...`) unless a document says otherwise. Absolute paths that begin

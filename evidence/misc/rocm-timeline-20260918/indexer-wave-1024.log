@@ -1,0 +1,6 @@
+bench-indexer: device=AMD Radeon AI PRO R9700 n_comp=1024 warmup=15 iters=80
+bench-indexer: wave-32 mismatch[0] bb29fe5f != bb29fe5e
+bench-indexer: wave-32 mismatch[1] ba98bf1c != ba98bf1b
+bench-indexer: wave-32 mismatch[2] bb28d1d6 != bb28d1d8
+bench-indexer: wave-32 mismatch[4] bb14fcbb != bb14fcbc
+bench-indexer: wave-32 FAILED 820 bitwise mismatches

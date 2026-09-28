@@ -1,0 +1,107 @@
+--- rocm/ds4_rocm_runtime.cuh
++++ /tmp/ds4-vision-profile-c229363/cache-experiment/ds4_rocm_runtime.cuh
+@@ -1582,12 +1582,48 @@
+     return 1;
+ }
+ 
++/* Private experiment. Counts survive eviction and decay every 128 decode
++ * tokens. Existing pin/current-selection checks still decide eligibility. */
++static uint16_t experiment_frequency[DS4_ROCM_STREAM_CACHE_LAYER_STATS_MAX][DS4_ROCM_MAX_N_EXPERT];
++static uint64_t experiment_decode_tokens;
++static int experiment_frequency_on(void) {
++    static int enabled = -1;
++    if (enabled < 0) {
++        const char *value = getenv("DS4_ROCM_EXPERIMENT_FREQUENCY_CACHE");
++        enabled = value && strcmp(value, "1") == 0;
++    }
++    return enabled && g_ssd_streaming_mode && !g_glm_model;
++}
++static uint32_t experiment_frequency_of(const cuda_stream_resident_expert &entry) {
++    if (!experiment_frequency_on() ||
++        entry.layer >= DS4_ROCM_STREAM_CACHE_LAYER_STATS_MAX ||
++        entry.expert >= DS4_ROCM_MAX_N_EXPERT) return 0;
++    return experiment_frequency[entry.layer][entry.expert];
++}
++static void experiment_note_route(uint32_t layer, const int32_t *ids, uint32_t count) {
++    if (getenv("DS4_ROCM_EXPERIMENT_ROUTE_TRACE")) {
++        fprintf(stderr, "ds4: experiment route layer=%u ids=", layer);
++        for (uint32_t i = 0; i < count; i++) fprintf(stderr, "%s%d", i ? "," : "", ids[i]);
++        fprintf(stderr, "\n");
++    }
++    if (!experiment_frequency_on() || layer >= DS4_ROCM_STREAM_CACHE_LAYER_STATS_MAX) return;
++    if (layer == 0 && ++experiment_decode_tokens % 128u == 0u) {
++        for (uint32_t l = 0; l < DS4_ROCM_STREAM_CACHE_LAYER_STATS_MAX; l++)
++            for (uint32_t e = 0; e < DS4_ROCM_MAX_N_EXPERT; e++) experiment_frequency[l][e] /= 2u;
++    }
++    for (uint32_t i = 0; i < count; i++) {
++        if (ids[i] >= 0 && (uint32_t)ids[i] < DS4_ROCM_MAX_N_EXPERT &&
++            experiment_frequency[layer][ids[i]] < UINT16_MAX) experiment_frequency[layer][ids[i]]++;
++    }
++}
++
+ static int cuda_stream_resident_evict_one(
+         uint32_t layer,
+         const int32_t *selected_ids,
+         uint32_t n_selected) {
+     size_t victim = (size_t)-1;
+     uint64_t oldest = UINT64_MAX;
++    uint32_t least_frequency = UINT32_MAX;
+     if (cuda_stream_evict_past_layers_first()) {
+         for (size_t i = 0; i < g_stream_resident_experts.size(); i++) {
+             const cuda_stream_resident_expert &e =
+@@ -1599,7 +1635,10 @@
+                                                 n_selected)) {
+                 continue;
+             }
+-            if (e.last_used < oldest) {
++            const uint32_t frequency = experiment_frequency_of(e);
++            if (frequency < least_frequency ||
++                (frequency == least_frequency && e.last_used < oldest)) {
++                least_frequency = frequency;
+                 oldest = e.last_used;
+                 victim = i;
+             }
+@@ -1609,13 +1648,17 @@
+         }
+     }
+     oldest = UINT64_MAX;
++    least_frequency = UINT32_MAX;
+     for (size_t i = 0; i < g_stream_resident_experts.size(); i++) {
+         const cuda_stream_resident_expert &e = g_stream_resident_experts[i];
+         if (e.pin_count != 0 ||
+             cuda_stream_selected_is_current(e, layer, selected_ids, n_selected)) {
+             continue;
+         }
+-        if (e.last_used < oldest) {
++        const uint32_t frequency = experiment_frequency_of(e);
++        if (frequency < least_frequency ||
++            (frequency == least_frequency && e.last_used < oldest)) {
++            least_frequency = frequency;
+             oldest = e.last_used;
+             victim = i;
+         }
+@@ -4501,6 +4544,7 @@
+                                       selected_ids,
+                                       gate_expert_bytes,
+                                       down_expert_bytes);
++    experiment_note_route(layer, selected_ids, n_selected);
+     const int stats_on = cuda_stream_cache_stats_on();
+     const int layer_stats_on =
+         cuda_stream_cache_layer_stats_on() &&
+@@ -6402,6 +6446,16 @@
+ 
+ extern "C" void ds4_gpu_cleanup(void) {
+     (void)cudaDeviceSynchronize();
++    if (cuda_stream_cache_stats_on()) {
++        uint64_t arena_reserved = 0, arena_used = 0;
++        for (const cuda_model_arena &arena : g_model_arenas) {
++            arena_reserved += arena.bytes;
++            arena_used += arena.used;
++        }
++        fprintf(stderr, "ds4: experiment model arenas count=%zu reserved=%.3f GiB used=%.3f GiB\n",
++                g_model_arenas.size(), (double)arena_reserved / 1073741824.0,
++                (double)arena_used / 1073741824.0);
++    }
+     cuda_stream_cache_stats_print("cleanup");
+     cuda_shared_gate_up_async_cleanup();
+ #ifdef __HIP_PLATFORM_AMD__

@@ -1,0 +1,110 @@
+[
+  {
+    "name": "0-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/ds4-server",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ctx",
+      "262144",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18000",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ssd-streaming-cache-experts",
+      "18GB",
+      "--vision",
+      "/media/NVME_DATA/MOUNTS/Models/ds4/gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+      "--dir-steering-file",
+      "/media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+      "--dir-steering-ffn",
+      "3.0"
+    ],
+    "ds4_environment": {
+      "DS4_ROCM_STREAM_FREE_RESERVE_GB": "2",
+      "DS4_SSD_AUTO_CACHE_PCT": "65"
+    },
+    "hsa_environment": {
+      "HSA_ENABLE_SDMA": "1"
+    },
+    "request_seconds": 57.23673869197955,
+    "usage": {
+      "prompt_tokens": 1529,
+      "completion_tokens": 413,
+      "total_tokens": 1942,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 1529
+      }
+    },
+    "finish": "stop",
+    "first_output_seconds": 14.789379345980706,
+    "first_text_seconds": 57.236587405990576,
+    "exit_code": 0,
+    "wall_seconds": 61.32023823802592,
+    "system_vmstat_delta": {
+      "pswpin": 448,
+      "pswpout": 53,
+      "pgmajfault": 482
+    },
+    "generation_tps": 9.49,
+    "generation_seconds": 43.499,
+    "post_first_interval_tps": 9.68
+  },
+  {
+    "name": "0-candidate",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-server-fixed-rocr.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ctx",
+      "262144",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18000",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ssd-streaming-cache-experts",
+      "18GB",
+      "--vision",
+      "/media/NVME_DATA/MOUNTS/Models/ds4/gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+      "--dir-steering-file",
+      "/media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+      "--dir-steering-ffn",
+      "3.0"
+    ],
+    "ds4_environment": {
+      "DS4_ROCM_STREAM_FREE_RESERVE_GB": "2",
+      "DS4_SSD_AUTO_CACHE_PCT": "65"
+    },
+    "hsa_environment": {
+      "HSA_ENABLE_SDMA": "1"
+    },
+    "request_seconds": 59.82243950499105,
+    "usage": {
+      "prompt_tokens": 1529,
+      "completion_tokens": 413,
+      "total_tokens": 1942,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 1529
+      }
+    },
+    "finish": "stop",
+    "first_output_seconds": 14.824239195993869,
+    "first_text_seconds": 59.82234827399952,
+    "exit_code": 0,
+    "wall_seconds": 64.40446124700247,
+    "system_vmstat_delta": {
+      "pswpin": 1391,
+      "pswpout": 0,
+      "pgmajfault": 1441
+    },
+    "generation_tps": 8.97,
+    "generation_seconds": 46.063,
+    "post_first_interval_tps": 9.652458318929986
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "options": {
+    "reference": "misc/rocm-prefetch-20260919/run-ds4-system-steered.sh",
+    "candidate": "misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh",
+    "reference_bench": "./ds4-bench",
+    "candidate_bench": "./ds4-bench",
+    "reference_compact": false,
+    "candidate_env": [],
+    "model": "/mnt/ram/ds4flash.gguf",
+    "output": "misc/rocm-prefetch-20260919/fixed-remaining-cli",
+    "tokens": 128,
+    "long_chars": 40000,
+    "contexts": [
+      8192,
+      16384
+    ],
+    "repeats": 1,
+    "skip_correctness": false,
+    "skip_bench": true,
+    "ttft": false,
+    "interactive": true,
+    "vision": "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "timeout": 1800
+  },
+  "page_size": 4096,
+  "binary_sha256": {
+    "/media/NVME_DATA/MOUNTS/Models/ds4/ds4-bench": "038868bacd412145633473c9b4fbd0bfdbec190d04f27a256c51c8996778be52",
+    "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh": "4420b254a785684f5544db5b5de33491a5a152d7886205d26782a6a96b10c5e9",
+    "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-system-steered.sh": "50edcbed77002cc91832655ed032d815ed22ee99f1171f73c41659814c5546fd"
+  }
+}

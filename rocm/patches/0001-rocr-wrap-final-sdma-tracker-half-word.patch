@@ -1,0 +1,33 @@
+From 1a2897e7ad2d26c631db52054c674f921252a9ce Mon Sep 17 00:00:00 2001
+From: Mauro Longano <mauro.longano@marconirovereto.it>
+Date: Sat, 19 Sep 2026 22:18:38 +0200
+Subject: [PATCH] fix(rocr): wrap final SDMA tracker half-word
+
+Map the ceil-converted final four-byte ring offset to slot zero, which is the first aligned word in the next ring cycle. Preserve the checked vector access for every other invalid index.
+
+Retained crash state shows that slot zero reports exactly the outstanding production copy while clamping to the final slot reads stale data.
+---
+ .../runtime/hsa-runtime/core/inc/amd_blit_sdma.h           | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/projects/rocr-runtime/runtime/hsa-runtime/core/inc/amd_blit_sdma.h b/projects/rocr-runtime/runtime/hsa-runtime/core/inc/amd_blit_sdma.h
+index 7d820c8437..76a229b44b 100644
+--- a/projects/rocr-runtime/runtime/hsa-runtime/core/inc/amd_blit_sdma.h
++++ b/projects/rocr-runtime/runtime/hsa-runtime/core/inc/amd_blit_sdma.h
+@@ -237,7 +237,12 @@ template <bool useGCR> class BlitSdma : public BlitSdmaBase {
+   class {
+    public:
+     // Indexed by wrapped command queue indices (offsets).
+-    uint64_t& operator[](uint32_t index) { return data_[convert(index)]; }
++    uint64_t& operator[](uint32_t index) {
++      uint32_t slot = convert(index);
++      // A final half-word rounds to the first aligned word in the next ring cycle.
++      if (slot == data_.size()) slot = 0;
++      return data_[slot];
++    }
+ 
+     void resize(size_t size) { data_.resize(convert(size)); }
+ 
+-- 
+2.55.0
+

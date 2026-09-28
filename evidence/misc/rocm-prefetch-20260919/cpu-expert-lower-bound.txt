@@ -1,0 +1,6 @@
+missing=1 threads=8 groups=32 ms_per_layer=1.917 ms_per_expert=1.917 checksum=1664.22
+missing=1 threads=16 groups=32 ms_per_layer=1.648 ms_per_expert=1.648 checksum=1664.22
+missing=1 threads=32 groups=32 ms_per_layer=11.587 ms_per_expert=11.587 checksum=1664.22
+missing=2 threads=8 groups=16 ms_per_layer=3.557 ms_per_expert=1.779 checksum=1544.66
+missing=2 threads=16 groups=16 ms_per_layer=3.378 ms_per_expert=1.689 checksum=1544.66
+missing=2 threads=32 groups=16 ms_per_layer=7.525 ms_per_expert=3.762 checksum=1544.66

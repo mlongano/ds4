@@ -1,0 +1,8 @@
+slots=2218 extra=0 (0.00GiB) misses=29415 reduction=0.00% ideal=0.00ms/t
+slots=2250 extra=32 (0.21GiB) misses=29092 reduction=1.10% ideal=0.44ms/t
+slots=2282 extra=64 (0.42GiB) misses=28767 reduction=2.20% ideal=0.89ms/t
+slots=2301 extra=83 (0.55GiB) misses=28590 reduction=2.80% ideal=1.13ms/t
+slots=2346 extra=128 (0.84GiB) misses=28172 reduction=4.23% ideal=1.71ms/t
+slots=2474 extra=256 (1.69GiB) misses=26944 reduction=8.40% ideal=3.39ms/t
+slots=2602 extra=384 (2.53GiB) misses=25797 reduction=12.30% ideal=4.97ms/t
+slots=2730 extra=512 (3.38GiB) misses=24479 reduction=16.78% ideal=6.78ms/t

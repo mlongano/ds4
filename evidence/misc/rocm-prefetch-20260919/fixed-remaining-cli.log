@@ -1,0 +1,8 @@
+started_utc=2026-09-19T21:22:06Z
+code: exact match, 42 prompt tokens, 128 steps
+database: exact match, 25 prompt tokens, 128 steps
+long: exact match, 12583 prompt tokens, 128 steps
+two-turn: identical nonempty stdout, completed generations checked
+image: identical nonempty stdout, completed generations checked
+Results: misc/rocm-prefetch-20260919/fixed-remaining-cli
+exit=0 ended_utc=2026-09-19T21:29:07Z

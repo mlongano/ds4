@@ -1,0 +1,29 @@
+{
+  "head": "c229363726b88b86bd547b3f930f1323e4139f1e",
+  "branch": "rocm-rdna4-streaming",
+  "sha256": {
+    "Makefile": "de0ce3ec36fd970533a668cda305ce0d5afc3d086201189d84481980578d8ed5",
+    "ROCM_STREAMING_PLAN.md": "5220d6c61dc9bc9473aaaac08e2cb6be6038cfd6b342197ef273177f8cfe23ab",
+    "ds4.c": "470ee2286d4115f7e9ce211da4fff47c14bd85b14d114cf19ceeab4918d6c40d",
+    "ds4_rocm.h": "b9b7180b307aea4219b6fb2ca38fa3d32dd4be827b6c2b9e13be5cf4aea0efab",
+    "rocm/ds4_rocm_runtime.cuh": "173dd35933b8f179b10e67471030746b7367c6606b61bc2f4d700572b6d80a09",
+    "tests/rocm_server_regression.py": "cc15570c11036dfe148934150d3dec0ccb48775bf3239d0556825614d9f2329f",
+    "tests/test_rocm_server_regression.py": "4b15e4bfc8b2884d4f7f24b06273014af3305025fb4ae5da5d390e7edbcb344f",
+    "tests/test_rocm_stream_pipeline.c": "6d64178b474e5a88400929169c5da73c6de39ce447ec1c3f5cb08fc6cd40cb89",
+    "rocm/ds4_rocm_trace.h": "456995009f7374b0ebcf70de40b20ff3a8e4d6ab8d8178fc508487b50ab8c1e7",
+    "rocm/ds4_rocm_trace.cuh": "040a004ae98b595622680bb3ae366838718dbc81666609751b6cccfa96f2593c",
+    "tests/rocm_trace_summary.py": "d23d741663864b7a8decd7074d77d440fe376f0957f03132fcd6b889f2202074",
+    "tests/test_rocm_trace.c": "4eb02784c856004130e745b9cb8d0f08ceedcdf5894379e86c0bd6df84bff1c8",
+    "tests/test_rocm_trace.py": "3b8ea23d7459addb01bc5b85b7cf67151d9944b817af633917b4e2b39210f541",
+    "misc/rocm-timeline-20260918/candidate/ds4": "b54bd0fb37f10fe360f718592e61a4ee13bb9c2189e91e31755f84cbc86e1131",
+    "misc/rocm-timeline-20260918/candidate/ds4-server": "95af99d1d12a50802ba1057357100281aa8fe8834e760a9f7aa2c60da20a0136",
+    "misc/rocm-timeline-20260918/candidate/ds4-bench": "038868bacd412145633473c9b4fbd0bfdbec190d04f27a256c51c8996778be52"
+  },
+  "build": "CPATH=/opt/rocm/include LIBRARY_PATH=/opt/rocm/lib LD_LIBRARY_PATH=/opt/rocm/lib make rdna4 -j16",
+  "tests": [
+    "make test-rocm-streaming-unit",
+    "LD_LIBRARY_PATH=/opt/rocm/lib LIBRARY_PATH=/opt/rocm/lib make test-rocm-q8-prefill"
+  ],
+  "performance_candidates_selected": 0,
+  "acceptance": "pending; diagnostic instrumentation only"
+}

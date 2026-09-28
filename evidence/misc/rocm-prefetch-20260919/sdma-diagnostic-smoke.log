@@ -1,0 +1,9 @@
+started_utc=2026-09-19T19:16:30Z
+device=AMD Radeon AI PRO R9700 workers=4 jobs_per_worker=2 sizes=2162688,2752512
+runtime-map: 784997400000-78499740f000 r--p 00000000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 78499740f000-784997565000 r-xp 0000f000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 784997565000-7849975e7000 r--p 00165000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 7849975e7000-7849975f1000 r--p 001e7000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 7849975f1000-78499781f000 rw-p 001f1000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+{"workers":4,"jobs_per_worker":2,"bytes":19660800,"elapsed_seconds":0.022584,"GiB_s":0.810770,"completion_checked":true,"failed":false}
+exit=0 ended_utc=2026-09-19T19:16:30Z

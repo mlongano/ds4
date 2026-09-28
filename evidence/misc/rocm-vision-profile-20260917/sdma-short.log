@@ -1,0 +1,7 @@
+0-reference 9.54 9.746133644587104
+0-candidate 8.44 8.699049355384817
+1-candidate 8.49 8.754685329349165
+1-reference 9.55 9.741869622283799
+2-reference 9.52 9.72315216442025
+2-candidate 8.3 8.595619836837635
+Exact generated-field comparisons passed. Results: /tmp/ds4-vision-profile-c229363/sdma-short

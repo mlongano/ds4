@@ -1,0 +1,25 @@
+{
+  "pid": 502566,
+  "args": [
+    "/usr/bin/python3",
+    "tests/rocm_server_regression.py",
+    "--request",
+    "/tmp/ds4-vision-profile-c229363/long-replay/request.json",
+    "--reference",
+    "/tmp/ds4-vision-profile-c229363/baseline/ds4-server",
+    "--candidate",
+    "/tmp/ds4-vision-profile-c229363/baseline/ds4-server",
+    "--vision",
+    "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "--steering-file",
+    "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "--tokens",
+    "1024",
+    "--repeats",
+    "1",
+    "--timeout",
+    "3600",
+    "--output",
+    "/tmp/ds4-vision-profile-c229363/long-aa"
+  ]
+}

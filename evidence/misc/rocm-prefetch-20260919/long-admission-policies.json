@@ -1,0 +1,262 @@
+{
+  "source": "misc/rocm-prefetch-20260919/long-route/0-reference/server.log",
+  "capacity": 2211,
+  "tokens": 256,
+  "baseline_misses": 15986,
+  "results": [
+    {
+      "policy": "lru",
+      "parameter": 0,
+      "misses": 15986,
+      "bypasses": 0,
+      "evictions": 13775,
+      "miss_reduction": 0.0,
+      "saved_MiB_per_token": 0.0,
+      "ideal_transfer_ms_saved_per_token": 0.0,
+      "bypass_fraction_of_misses": 0.0
+    },
+    {
+      "policy": "threshold",
+      "parameter": 2,
+      "misses": 16329,
+      "bypasses": 4611,
+      "evictions": 9507,
+      "miss_reduction": -0.021456274239959966,
+      "saved_MiB_per_token": -9.0439453125,
+      "ideal_transfer_ms_saved_per_token": -0.7065582275390625,
+      "bypass_fraction_of_misses": 0.28238103986772
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 8,
+      "misses": 16388,
+      "bypasses": 1818,
+      "evictions": 12359,
+      "miss_reduction": -0.025147003628174652,
+      "saved_MiB_per_token": -10.599609375,
+      "ideal_transfer_ms_saved_per_token": -0.828094482421875,
+      "bypass_fraction_of_misses": 0.11093483036368074
+    },
+    {
+      "policy": "recent",
+      "parameter": 16512,
+      "misses": 16646,
+      "bypasses": 7153,
+      "evictions": 7282,
+      "miss_reduction": -0.04128612535968973,
+      "saved_MiB_per_token": -17.40234375,
+      "ideal_transfer_ms_saved_per_token": -1.35955810546875,
+      "bypass_fraction_of_misses": 0.4297128439264688
+    },
+    {
+      "policy": "recent",
+      "parameter": 4128,
+      "misses": 17392,
+      "bypasses": 10735,
+      "evictions": 4446,
+      "miss_reduction": -0.08795195796321782,
+      "saved_MiB_per_token": -37.072265625,
+      "ideal_transfer_ms_saved_per_token": -2.896270751953125,
+      "bypass_fraction_of_misses": 0.6172378104875805
+    },
+    {
+      "policy": "recent",
+      "parameter": 8256,
+      "misses": 17436,
+      "bypasses": 9956,
+      "evictions": 5269,
+      "miss_reduction": -0.09070436632053046,
+      "saved_MiB_per_token": -38.232421875,
+      "ideal_transfer_ms_saved_per_token": -2.986907958984375,
+      "bypass_fraction_of_misses": 0.5710025235145676
+    },
+    {
+      "policy": "threshold",
+      "parameter": 3,
+      "misses": 17465,
+      "bypasses": 8537,
+      "evictions": 6717,
+      "miss_reduction": -0.09251845364694107,
+      "saved_MiB_per_token": -38.9970703125,
+      "ideal_transfer_ms_saved_per_token": -3.0466461181640625,
+      "bypass_fraction_of_misses": 0.48880618379616375
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 16,
+      "misses": 17935,
+      "bypasses": 8334,
+      "evictions": 7390,
+      "miss_reduction": -0.12191917928187164,
+      "saved_MiB_per_token": -51.3896484375,
+      "ideal_transfer_ms_saved_per_token": -4.0148162841796875,
+      "bypass_fraction_of_misses": 0.464678003902983
+    },
+    {
+      "policy": "recent",
+      "parameter": 2064,
+      "misses": 18383,
+      "bypasses": 12661,
+      "evictions": 3511,
+      "miss_reduction": -0.1499437007381459,
+      "saved_MiB_per_token": -63.2021484375,
+      "ideal_transfer_ms_saved_per_token": -4.9376678466796875,
+      "bypass_fraction_of_misses": 0.6887341565576892
+    },
+    {
+      "policy": "threshold",
+      "parameter": 4,
+      "misses": 18483,
+      "bypasses": 11668,
+      "evictions": 4604,
+      "miss_reduction": -0.1561991742774928,
+      "saved_MiB_per_token": -65.8388671875,
+      "ideal_transfer_ms_saved_per_token": -5.1436614990234375,
+      "bypass_fraction_of_misses": 0.6312828004111887
+    },
+    {
+      "policy": "recent",
+      "parameter": 1032,
+      "misses": 19026,
+      "bypasses": 13985,
+      "evictions": 2830,
+      "miss_reduction": -0.19016639559614662,
+      "saved_MiB_per_token": -80.15625,
+      "ideal_transfer_ms_saved_per_token": -6.26220703125,
+      "bypass_fraction_of_misses": 0.7350467780931357
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 32,
+      "misses": 19270,
+      "bypasses": 13051,
+      "evictions": 4008,
+      "miss_reduction": -0.20542975103215314,
+      "saved_MiB_per_token": -86.58984375,
+      "ideal_transfer_ms_saved_per_token": -6.76483154296875,
+      "bypass_fraction_of_misses": 0.6772703684483653
+    },
+    {
+      "policy": "recent",
+      "parameter": 516,
+      "misses": 20172,
+      "bypasses": 15710,
+      "evictions": 2251,
+      "miss_reduction": -0.2618541223570624,
+      "saved_MiB_per_token": -110.373046875,
+      "ideal_transfer_ms_saved_per_token": -8.622894287109375,
+      "bypass_fraction_of_misses": 0.7788023002181241
+    },
+    {
+      "policy": "threshold",
+      "parameter": 6,
+      "misses": 20681,
+      "bypasses": 16188,
+      "evictions": 2282,
+      "miss_reduction": -0.2936944826723383,
+      "saved_MiB_per_token": -123.7939453125,
+      "ideal_transfer_ms_saved_per_token": -9.671401977539062,
+      "bypass_fraction_of_misses": 0.7827474493496446
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 64,
+      "misses": 21142,
+      "bypasses": 16711,
+      "evictions": 2220,
+      "miss_reduction": -0.32253221568872764,
+      "saved_MiB_per_token": -135.94921875,
+      "ideal_transfer_ms_saved_per_token": -10.62103271484375,
+      "bypass_fraction_of_misses": 0.7904171790748273
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 128,
+      "misses": 22784,
+      "bypasses": 18950,
+      "evictions": 1623,
+      "miss_reduction": -0.4252470912048042,
+      "saved_MiB_per_token": -179.244140625,
+      "ideal_transfer_ms_saved_per_token": -14.003448486328125,
+      "bypass_fraction_of_misses": 0.8317240168539326
+    },
+    {
+      "policy": "threshold",
+      "parameter": 8,
+      "misses": 22843,
+      "bypasses": 19240,
+      "evictions": 1392,
+      "miss_reduction": -0.4289378205930189,
+      "saved_MiB_per_token": -180.7998046875,
+      "ideal_transfer_ms_saved_per_token": -14.124984741210938,
+      "bypass_fraction_of_misses": 0.8422711552773279
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 256,
+      "misses": 24627,
+      "bypasses": 20997,
+      "evictions": 1419,
+      "miss_reduction": -0.5405354685349681,
+      "saved_MiB_per_token": -227.8388671875,
+      "ideal_transfer_ms_saved_per_token": -17.799911499023438,
+      "bypass_fraction_of_misses": 0.8526008039956146
+    },
+    {
+      "policy": "tinylfu",
+      "parameter": 0,
+      "misses": 24627,
+      "bypasses": 20997,
+      "evictions": 1419,
+      "miss_reduction": -0.5405354685349681,
+      "saved_MiB_per_token": -227.8388671875,
+      "ideal_transfer_ms_saved_per_token": -17.799911499023438,
+      "bypass_fraction_of_misses": 0.8526008039956146
+    },
+    {
+      "policy": "hybrid",
+      "parameter": 0,
+      "misses": 24627,
+      "bypasses": 20997,
+      "evictions": 1419,
+      "miss_reduction": -0.5405354685349681,
+      "saved_MiB_per_token": -227.8388671875,
+      "ideal_transfer_ms_saved_per_token": -17.799911499023438,
+      "bypass_fraction_of_misses": 0.8526008039956146
+    },
+    {
+      "policy": "threshold",
+      "parameter": 12,
+      "misses": 26090,
+      "bypasses": 23107,
+      "evictions": 772,
+      "miss_reduction": -0.6320530464156137,
+      "saved_MiB_per_token": -266.4140625,
+      "ideal_transfer_ms_saved_per_token": -20.8135986328125,
+      "bypass_fraction_of_misses": 0.8856650057493293
+    },
+    {
+      "policy": "threshold",
+      "parameter": 16,
+      "misses": 28146,
+      "bypasses": 25434,
+      "evictions": 501,
+      "miss_reduction": -0.7606655823845865,
+      "saved_MiB_per_token": -320.625,
+      "ideal_transfer_ms_saved_per_token": -25.048828125,
+      "bypass_fraction_of_misses": 0.9036452781922831
+    },
+    {
+      "policy": "interval",
+      "parameter": 0,
+      "misses": 33232,
+      "bypasses": 30961,
+      "evictions": 60,
+      "miss_reduction": -1.0788189665957713,
+      "saved_MiB_per_token": -454.728515625,
+      "ideal_transfer_ms_saved_per_token": -35.525665283203125,
+      "bypass_fraction_of_misses": 0.9316622532498796
+    }
+  ],
+  "limits": "Bypassed misses require temporary execution slots not modeled in VRAM/timing. Exact causal counters; implementation overhead excluded."
+}

@@ -1,0 +1,58 @@
+{
+  "diagnostic_only": true,
+  "steady_positions": 334,
+  "layer_position_pairs": 14362,
+  "stage_ms_per_token": {
+    "routed_moe": 65.1620688622753,
+    "attn_inv_rope": 8.1067754491017,
+    "attn_output": 7.134748502993982,
+    "q_path": 5.301194610779217,
+    "ffn_hc_pre": 3.7483952095812745,
+    "attn_hc_pre": 3.713065868263451,
+    "shared_gate_up": 3.3608263473052147,
+    "shared_down": 2.802269461078005,
+    "router": 2.3442994011973575,
+    "compressor_proj": 2.2174820359281053,
+    "ffn_hc_post": 1.8972485029940125,
+    "kv_path": 1.4970718562873806,
+    "compressor_update": 1.3381616766466584,
+    "indexer_compressor_proj": 0.7812005988024323,
+    "indexer_compressor_update": 0.7021167664670179,
+    "attn_norm": 0.21861377245509184,
+    "ffn_norm": 0.20666167664669036,
+    "indexer_compressor_qat": 0.1587694610778474,
+    "compressor_quantize": 0.15534131736526616,
+    "attn_hc_post": 0.15082035928144144,
+    "compressor_indexer": 0.10277245508981205,
+    "compressor_commit": 0.012796407185628193
+  },
+  "read_snapshots": [
+    {
+      "jobs": 10419.0,
+      "GiB": 81.18,
+      "worker_read_ms": 17523.996,
+      "worker_upload_ms": 24878.349,
+      "host_wait_ms": 6805.721
+    },
+    {
+      "jobs": 99737.0,
+      "GiB": 283.24,
+      "worker_read_ms": 56955.499,
+      "worker_upload_ms": 73639.025,
+      "host_wait_ms": 27591.508
+    }
+  ],
+  "decode_read_delta": {
+    "jobs": 89318.0,
+    "GiB": 202.06,
+    "worker_read_ms": 39431.503000000004,
+    "worker_upload_ms": 48760.67599999999,
+    "host_wait_ms": 20785.787000000004
+  },
+  "cache_snapshots": [
+    "ds4: ROCm stream cache stats before-decode: selected calls=0 slots=0 hits=0 misses=0; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=0 alloc=0.00 GiB evictions=0 evicted=0.00 GiB; resident current=0/0.00 GiB max=0/0.00 GiB budget=2218",
+    "ds4: ROCm stream cache stats cleanup: selected calls=16512 slots=99072 hits=69657 misses=29415; batch calls=0 unique=0 hits=0 misses=0; seed calls=0 unique=0; full-layer loads=0 bytes=0.00 GiB resident-flushes=0; allocs=29415 alloc=193.90 GiB evictions=27197 evicted=179.28 GiB; resident current=2218/14.62 GiB max=2218/14.62 GiB budget=2218"
+  ],
+  "routed_gpu_event_profile": "ds4: ROCm Q2 decode MoE profile calls=16512 split=16512 q8_gateup=0 q8_down=0 finish_missing=20100.834 ms gate_resident=1372.577 ms gate_missing=789.506 ms gate_full=0.000 ms mid_quant=0.000 ms down=1312.887 ms avg_sum=1.428 ms",
+  "limits": "Stage fences use the compute stream, preserving streaming eligibility but perturbing scheduling. Stage totals include host overhead. Routed GPU event totals include the first interval. Pipelined read/upload worker totals and host waits overlap and must not be added together."
+}

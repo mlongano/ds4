@@ -1,0 +1,54 @@
+{
+  "runtime": {
+    "package": "hsa-rocr 7.2.4-1",
+    "source_tag": "rocm-7.2.4",
+    "source_commit": "97f5574fe2fdc7bef44fb01545347912ee9f1779",
+    "system_build_id": "2e2d3183cee7ff4087f70e26daa249261f2092b1"
+  },
+  "ring": {
+    "queue_size_bytes": 8388608,
+    "tracker_word_bytes": 8,
+    "failing_wrapped_read_offset": 8388604,
+    "converted_tracker_index": 1048576,
+    "tracker_size": 1048576
+  },
+  "cores": [
+    {
+      "pid": 508873,
+      "tid": 508921,
+      "cached_commit": 536871036,
+      "inferred_hw_read_at_failure": 536870908,
+      "pending_command_bytes": 128,
+      "bytes_queued": 11135112621692,
+      "tracker_first": 11135110459004,
+      "tracker_last": 0,
+      "pending_bytes_wrap": 2162688,
+      "pending_bytes_clamp": 11135112621692,
+      "production_upload_size_match": 2162688
+    },
+    {
+      "pid": 3012217,
+      "tid": 3012274,
+      "cached_commit": 763363452,
+      "inferred_hw_read_at_failure": 763363324,
+      "pending_command_bytes": 128,
+      "bytes_queued": 16183279252664,
+      "tracker_first": 16183276500152,
+      "tracker_last": 0,
+      "pending_bytes_wrap": 2752512,
+      "pending_bytes_clamp": 16183279252664,
+      "production_upload_size_match": 2752512
+    }
+  ],
+  "derivation": {
+    "failing_offset": "With a 4-byte-aligned wrapped read pointer below kQueueSize, only kQueueSize-4 ceil-converts to tracker_size.",
+    "monotonic_read": "For each cached commit, the unique nonfuture read index within one queue capacity whose wrapped offset is kQueueSize-4 is cached_commit-128.",
+    "semantic_result": "Slot zero is the first aligned tracker word in the next ring cycle and yields exactly the outstanding production copy size in both cores. The final slot is stale zero, rejecting clamp-to-final-slot."
+  },
+  "fix": {
+    "branch": "ds4-sdma-pendingbytes-wrap-fix",
+    "commit": "1a2897e7ad2d26c631db52054c674f921252a9ce",
+    "build_id": "1.18.0-local-build-1a2897e7ad",
+    "library_sha256": "1009e6f51ba351bf632867effc63bb0a30de2b17539b46a6150de781d0c3ec9f"
+  }
+}

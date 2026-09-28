@@ -1,0 +1,33 @@
+ds4: Linux rocm backend set oom_score_adj=1000
+ds4: ROCm backend initialized on AMD Radeon AI PRO R9700 (sm_120)
+ds4: SSD streaming auto cache budget
+ds4:   rocm recommends 31.86 GiB working set
+ds4:   using 82% total for model + cached experts: 26.19 GiB
+ds4:   non-routed weights: 8.20 GiB
+ds4:   routed expert size: 6.75 MiB
+ds4:   expert budget before prefill reserve: 2730 (18.00 GiB)
+ds4: rocm SSD streaming cache target 18.00 GiB; effective 18.00 GiB = 3.38 GiB prefill headroom + 14.62 GiB dynamic cache (2218 experts, 6.75 MiB each)
+ds4: SSD streaming initial rocm model map restricted to token embedding (1 spans, 0.99 GiB tensor span)
+ds4: ROCm loading model tensors into device cache
+ds4: ROCm preparing model tensor mappings
+ds4: ROCm startup model preparation covered 0.99 GiB of tensor spans in 0.000s
+ds4: rocm backend initialized for graph diagnostics
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB + resident model 2.81 GiB + expert cache 14.62 GiB + prefill expert reserve 3.38 GiB = 26.53 GiB planned
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB = 5.72 GiB context
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+ds4: accelerator using managed KV cache for ctx=262144 (kv cache 3.72 GiB, context buffers 5.72 GiB); this may degrade performance but is needed for very large contexts
+ds4: directional steering enabled: /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 attn=0 ffn=3
+processing 12583 input tokens: 0/12583 (0.0%)
+ds4: ROCm loading model tensors 1.00 GiB cached
+ds4: ROCm loading model tensors 7.87 GiB cached
+processing 12583 input tokens: 4096/12583 (32.6%)
+ds4: ROCm loading model tensors 7.87 GiB cached
+ds4: ROCm loading model tensors 13.39 GiB cached
+processing 12583 input tokens: 8192/12583 (65.1%)
+ds4: ROCm loading model tensors 12.19 GiB cached
+ds4: ROCm loading model tensors 1.50 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+processing 12583 input tokens: 12288/12583 (97.7%)
+ds4: ROCm loading model tensors 6.02 GiB cached
+processing 12583 input tokens: 12583/12583 (100.0%)

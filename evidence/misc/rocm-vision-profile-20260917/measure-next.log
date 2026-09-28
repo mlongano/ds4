@@ -1,0 +1,8 @@
+Long-context A/A gate passed
+START short-profile 2026-09-17T22:11:45+0200
+END short-profile exit 0 2026-09-17T22:13:46+0200
+START long-profile 2026-09-17T22:13:46+0200
+END long-profile exit 0 2026-09-17T22:26:08+0200
+START sdma-short 2026-09-17T22:26:08+0200
+END sdma-short exit 0 2026-09-17T22:32:23+0200
+All queued measurements finished

@@ -61,3 +61,17 @@ Upstream intake — before merging `antirez/ds4`, rebasing the local commits, or
 whether upstream has anything worth taking: read `docs/UPSTREAM.md`. It carries the delta
 inventory, the take/skip criteria, and the procedure with completion criteria. This file
 stays about code.
+
+## Untracked runtime and measurement files
+
+`misc/` is gitignored (`.gitignore:42`) and holds two things that are not disposable: the
+patched ROCr prefix that `ds4-server-launch.sh` refuses to start without and that qwen-flash's
+launchers load too, and the run directories behind every measurement in the docs.
+
+Never run `git clean -x`, `-X` or `-xdf` in this repository: `x` means delete ignored files,
+and that is all of `misc/`. Use `git clean -n` first, every time.
+
+The parts worth keeping are tracked elsewhere: the ROCr patch and its build recipe in
+`rocm/patches/`, the small results, logs and experiment patches in `evidence/`. Anything that
+exists only under `/tmp` does not survive a reboot and four such directories already did not,
+so copy results into `evidence/` when a run produces them.

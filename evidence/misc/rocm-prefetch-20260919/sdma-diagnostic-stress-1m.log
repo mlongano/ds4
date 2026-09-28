@@ -1,0 +1,11 @@
+started_utc=2026-09-19T19:16:48Z
+vmstat_before: pswpin=11286534 pswpout=15913746 
+device=AMD Radeon AI PRO R9700 workers=4 jobs_per_worker=1000000 sizes=2162688,2752512
+runtime-map: 72166a800000-72166a80f000 r--p 00000000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 72166a80f000-72166a965000 r-xp 0000f000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 72166a965000-72166a9e7000 r--p 00165000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 72166a9e7000-72166a9f1000 r--p 001e7000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+runtime-map: 72166a9f1000-72166ac1f000 rw-p 001f1000 00:30 1537269                    /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-prefix/lib/libhsa-runtime64.so.1.18.0
+{"workers":4,"jobs_per_worker":1000000,"bytes":9830400000000,"elapsed_seconds":719.607653,"GiB_s":12.722590,"completion_checked":true,"failed":false}
+vmstat_after: pswpin=11288196 pswpout=15913746 
+exit=0 ended_utc=2026-09-19T19:28:48Z

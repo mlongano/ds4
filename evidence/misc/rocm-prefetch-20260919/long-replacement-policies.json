@@ -1,0 +1,114 @@
+{
+  "source": "misc/rocm-prefetch-20260919/long-route/0-reference/server.log",
+  "capacity": 2211,
+  "tokens": 256,
+  "baseline_misses": 15986,
+  "results": [
+    {
+      "policy": "belady",
+      "misses": 9596,
+      "miss_reduction": 0.39972475916426875,
+      "saved_MiB_per_token": 168.486328125,
+      "ideal_transfer_ms_saved_per_token": 13.162994384765625
+    },
+    {
+      "policy": "frequency-16",
+      "misses": 15720,
+      "miss_reduction": 0.01663955961466283,
+      "saved_MiB_per_token": 7.013671875,
+      "ideal_transfer_ms_saved_per_token": 0.547943115234375
+    },
+    {
+      "policy": "frequency-32",
+      "misses": 15808,
+      "miss_reduction": 0.011134742900037534,
+      "saved_MiB_per_token": 4.693359375,
+      "ideal_transfer_ms_saved_per_token": 0.366668701171875
+    },
+    {
+      "policy": "slru-0.25",
+      "misses": 15821,
+      "miss_reduction": 0.010321531339922432,
+      "saved_MiB_per_token": 4.3505859375,
+      "ideal_transfer_ms_saved_per_token": 0.3398895263671875
+    },
+    {
+      "policy": "slru-0.50",
+      "misses": 15837,
+      "miss_reduction": 0.009320655573626924,
+      "saved_MiB_per_token": 3.9287109375,
+      "ideal_transfer_ms_saved_per_token": 0.3069305419921875
+    },
+    {
+      "policy": "frequency-8",
+      "misses": 15980,
+      "miss_reduction": 0.0003753284123608157,
+      "saved_MiB_per_token": 0.158203125,
+      "ideal_transfer_ms_saved_per_token": 0.012359619140625
+    },
+    {
+      "policy": "lru",
+      "misses": 15986,
+      "miss_reduction": 0.0,
+      "saved_MiB_per_token": 0.0,
+      "ideal_transfer_ms_saved_per_token": 0.0
+    },
+    {
+      "policy": "lru-2",
+      "misses": 17044,
+      "miss_reduction": -0.06618291004629051,
+      "saved_MiB_per_token": -27.896484375,
+      "ideal_transfer_ms_saved_per_token": -2.179412841796875
+    },
+    {
+      "policy": "lru-3",
+      "misses": 17207,
+      "miss_reduction": -0.076379331915426,
+      "saved_MiB_per_token": -32.1943359375,
+      "ideal_transfer_ms_saved_per_token": -2.5151824951171875
+    },
+    {
+      "policy": "frequency-64",
+      "misses": 17285,
+      "miss_reduction": -0.0812586012761166,
+      "saved_MiB_per_token": -34.2509765625,
+      "ideal_transfer_ms_saved_per_token": -2.6758575439453125
+    },
+    {
+      "policy": "slru-0.75",
+      "misses": 17396,
+      "miss_reduction": -0.0882021769047917,
+      "saved_MiB_per_token": -37.177734375,
+      "ideal_transfer_ms_saved_per_token": -2.904510498046875
+    },
+    {
+      "policy": "lru-4",
+      "misses": 17860,
+      "miss_reduction": -0.11722757412736144,
+      "saved_MiB_per_token": -49.412109375,
+      "ideal_transfer_ms_saved_per_token": -3.860321044921875
+    },
+    {
+      "policy": "frequency-128",
+      "misses": 18405,
+      "miss_reduction": -0.1513199049168022,
+      "saved_MiB_per_token": -63.7822265625,
+      "ideal_transfer_ms_saved_per_token": -4.9829864501953125
+    },
+    {
+      "policy": "frequency-0",
+      "misses": 19666,
+      "miss_reduction": -0.23020142624796697,
+      "saved_MiB_per_token": -97.03125,
+      "ideal_transfer_ms_saved_per_token": -7.58056640625
+    },
+    {
+      "policy": "frequency-256",
+      "misses": 19667,
+      "miss_reduction": -0.23026398098336043,
+      "saved_MiB_per_token": -97.0576171875,
+      "ideal_transfer_ms_saved_per_token": -7.5826263427734375
+    }
+  ],
+  "limits": "Offline route replay. Belady uses future knowledge and is only an upper bound. Other policies are causal but do not include implementation overhead."
+}

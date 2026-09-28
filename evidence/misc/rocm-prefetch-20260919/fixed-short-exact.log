@@ -1,0 +1,16 @@
+started_utc=2026-09-19T20:26:38Z
+Traceback (most recent call last):
+  File "/media/NVME_DATA/MOUNTS/Models/ds4/tests/rocm_server_regression.py", line 160, in main
+    raise RuntimeError("Server exited during startup")
+RuntimeError: Server exited during startup
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/media/NVME_DATA/MOUNTS/Models/ds4/tests/rocm_server_regression.py", line 237, in <module>
+    main()
+    ~~~~^^
+  File "/media/NVME_DATA/MOUNTS/Models/ds4/tests/rocm_server_regression.py", line 229, in main
+    raise RuntimeError(f"{work.name} failed; see {work}") from error
+RuntimeError: 0-reference failed; see misc/rocm-prefetch-20260919/fixed-short-exact/0-reference
+exit=1 ended_utc=2026-09-19T20:26:38Z

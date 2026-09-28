@@ -1,0 +1,28 @@
+{
+  "options": {
+    "request": "misc/rocm-vision-profile-20260917/long-replay/request.json",
+    "reference": "misc/rocm-vision-profile-20260917/cache-experiment/ds4-server",
+    "candidate": "./ds4-server",
+    "model": "/mnt/ram/ds4flash.gguf",
+    "vision": "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "steering_file": "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "steering_scale": 3,
+    "candidate_env": [],
+    "reference_env": [
+      "DS4_ROCM_EXPERIMENT_ROUTE_TRACE=1",
+      "DS4_ROCM_STREAM_CACHE_STATS=1"
+    ],
+    "profile": false,
+    "tokens": 256,
+    "seed": 123,
+    "repeats": 1,
+    "port": 18000,
+    "timeout": 3600.0,
+    "output": "misc/rocm-prefetch-20260919/long-route"
+  },
+  "page_size": 4096,
+  "binary_sha256": {
+    "reference": "29d0a1f4a66a059c9646c938f24be3a380c6dcc9aeed054bc4c0ffbad9700e77",
+    "candidate": "95af99d1d12a50802ba1057357100281aa8fe8834e760a9f7aa2c60da20a0136"
+  }
+}

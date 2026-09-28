@@ -1,0 +1,350 @@
+CMake Warning (deprecated) at CMakeLists.txt:44 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+fatal: Not a valid object name origin/HEAD
+add_rocm_subdir() -- libhsakmt
+  subdir_assigns:EOM
+CMake Warning (deprecated) at libhsakmt/CMakeLists.txt:26 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+VERSION BUILD DEFINED 7.2.4-1-g1a2897e7ad
+-- Detected distribution: omarchy:"4.0.0.r2158.gd174d4a"
+CMake Warning at libhsakmt/CMakeLists.txt:164 (find_package):
+  By not providing "FindNUMA.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "NUMA", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "NUMA" with any of
+  the following names:
+
+    NUMA.cps
+    numa.cps
+    NUMAConfig.cmake
+    numa-config.cmake
+
+  Add the installation prefix of "NUMA" to CMAKE_PREFIX_PATH or set
+  "NUMA_DIR" to a directory containing one of the above files.  If "NUMA"
+  provides a separate development package or SDK, be sure it has been
+  installed.
+
+
+-- LIBC: /usr/lib/libc.so
+-- NUMA: /usr/lib/libnuma.so
+add_rocm_subdir() -- runtime/hsa-runtime
+  subdir_assigns:EOM
+CMake Warning (deprecated) at runtime/hsa-runtime/CMakeLists.txt:43 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+-- Could NOT find LibElf (missing: LibElf_DIR)
+CMake Warning (deprecated) at runtime/hsa-runtime/core/runtime/trap_handler/CMakeLists.txt:43 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+Using clang from: /opt/rocm/lib/llvm/bin/clang-22
+Using llvm-objcopy from: /opt/rocm/lib/llvm/bin/llvm-objcopy
+Trap handlers assembled for: gfx900;gfx942;gfx950;gfx1010;gfx1030;gfx1100;gfx1200
+
+  Generating: gfx900 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler.s
+     Trap Handler Binary: kCodeTrapHandlerV2_9
+
+  Generating: gfx942 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler.s
+     Trap Handler Binary: kCodeTrapHandlerV2_942
+
+  Generating: gfx950 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler.s
+     Trap Handler Binary: kCodeTrapHandlerV2_950
+
+  Generating: gfx1010 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler.s
+     Trap Handler Binary: kCodeTrapHandlerV2_1010
+
+  Generating: gfx1030 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler.s
+     Trap Handler Binary: kCodeTrapHandlerV2_10
+
+  Generating: gfx1100 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler.s
+     Trap Handler Binary: kCodeTrapHandlerV2_11
+
+  Generating: gfx1200 ...
+     Trap Handler Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/trap_handler/trap_handler_gfx12.s
+     Trap Handler Binary: kCodeTrapHandlerV2_12
+CMake Warning (deprecated) at runtime/hsa-runtime/core/runtime/blit_shaders/CMakeLists.txt:45 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+Using clang from: /opt/rocm/lib/llvm/bin/clang-22
+Using llvm-objcopy from: /opt/rocm/lib/llvm/bin/llvm-objcopy
+Blit Shaders assembled for: gfx900;gfx1010;gfx1030;gfx1100;gfx1200
+
+  Generating: gfx900 for kCodeCopyAligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyAligned.s
+     Blit Shader Binary: kCodeCopyAligned9
+
+  Generating: gfx1010 for kCodeCopyAligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyAligned.s
+     Blit Shader Binary: kCodeCopyAligned1010
+
+  Generating: gfx1030 for kCodeCopyAligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyAligned.s
+     Blit Shader Binary: kCodeCopyAligned10
+
+  Generating: gfx1100 for kCodeCopyAligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyAligned.s
+     Blit Shader Binary: kCodeCopyAligned11
+
+  Generating: gfx1200 for kCodeCopyAligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyAligned.s
+     Blit Shader Binary: kCodeCopyAligned12
+
+  Generating: gfx900 for kCodeCopyMisaligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyMisaligned.s
+     Blit Shader Binary: kCodeCopyMisaligned9
+
+  Generating: gfx1010 for kCodeCopyMisaligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyMisaligned.s
+     Blit Shader Binary: kCodeCopyMisaligned1010
+
+  Generating: gfx1030 for kCodeCopyMisaligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyMisaligned.s
+     Blit Shader Binary: kCodeCopyMisaligned10
+
+  Generating: gfx1100 for kCodeCopyMisaligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyMisaligned.s
+     Blit Shader Binary: kCodeCopyMisaligned11
+
+  Generating: gfx1200 for kCodeCopyMisaligned ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_copyMisaligned.s
+     Blit Shader Binary: kCodeCopyMisaligned12
+
+  Generating: gfx900 for kCodeFill ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_fill.s
+     Blit Shader Binary: kCodeFill9
+
+  Generating: gfx1010 for kCodeFill ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_fill.s
+     Blit Shader Binary: kCodeFill1010
+
+  Generating: gfx1030 for kCodeFill ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_fill.s
+     Blit Shader Binary: kCodeFill10
+
+  Generating: gfx1100 for kCodeFill ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_fill.s
+     Blit Shader Binary: kCodeFill11
+
+  Generating: gfx1200 for kCodeFill ...
+     Blit Shader Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/blit_shaders/blit_fill.s
+     Blit Shader Binary: kCodeFill12
+CMake Warning (deprecated) at runtime/hsa-runtime/image/blit_src/CMakeLists.txt:43 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+to suppress it.
+
+Using clang from: /opt/rocm/lib/llvm/bin/clang-22
+Build Setting:
+  Target Devices*: gfx700;gfx701;gfx702;gfx801;gfx802;gfx803;gfx805;gfx810;gfx900;gfx902;gfx904;gfx906;gfx908;gfx909;gfx90a;gfx90c;gfx942;gfx950;gfx1010;gfx1011;gfx1012;gfx1013;gfx1030;gfx1031;gfx1032;gfx1033;gfx1034;gfx1035;gfx1036;gfx1100;gfx1101;gfx1102;gfx1103;gfx1150;gfx1151;gfx1152;gfx1153;gfx1200;gfx1201
+  (Specify ";" separated list of target IDs.)
+       Clang path: /opt/rocm/lib/llvm/bin/clang-22
+
+  Generating: gfx700 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx700
+
+  Generating: gfx701 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx701
+
+  Generating: gfx702 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx702
+
+  Generating: gfx801 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx801
+
+  Generating: gfx802 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx802
+
+  Generating: gfx803 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx803
+
+  Generating: gfx805 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx805
+
+  Generating: gfx810 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx810
+
+  Generating: gfx900 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx900
+
+  Generating: gfx902 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx902
+
+  Generating: gfx904 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx904
+
+  Generating: gfx906 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx906
+
+  Generating: gfx908 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx908
+
+  Generating: gfx909 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx909
+
+  Generating: gfx90a ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx90a
+
+  Generating: gfx90c ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx90c
+
+  Generating: gfx942 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx942
+
+  Generating: gfx950 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx950
+
+  Generating: gfx1010 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1010
+
+  Generating: gfx1011 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1011
+
+  Generating: gfx1012 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1012
+
+  Generating: gfx1013 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1013
+
+  Generating: gfx1030 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1030
+
+  Generating: gfx1031 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1031
+
+  Generating: gfx1032 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1032
+
+  Generating: gfx1033 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1033
+
+  Generating: gfx1034 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1034
+
+  Generating: gfx1035 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1035
+
+  Generating: gfx1036 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1036
+
+  Generating: gfx1100 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1100
+
+  Generating: gfx1101 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1101
+
+  Generating: gfx1102 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1102
+
+  Generating: gfx1103 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1103
+
+  Generating: gfx1150 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1150
+
+  Generating: gfx1151 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1151
+
+  Generating: gfx1152 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1152
+
+  Generating: gfx1153 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1153
+
+  Generating: gfx1200 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1200
+
+  Generating: gfx1201 ...
+      Kernel Source: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-source/projects/rocr-runtime/runtime/hsa-runtime/image/blit_src/imageblit_kernels.cl
+     Kernel Bitcode: ocl_blit_object_gfx1201
+Using CPACK_DEBIAN_PACKAGE_RELEASE local
+RESULT_VARIABLE no such file or directory OUTPUT_VARIABLE: 
+CPACK_RPM_PACKAGE_RELEASE: local%{?dist}
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: /media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-local-runtime-fixed-build

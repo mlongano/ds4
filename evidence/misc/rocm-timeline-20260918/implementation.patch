@@ -1,0 +1,1245 @@
+diff --git i/Makefile w/Makefile
+index f1f84d9..0171d43 100644
+--- i/Makefile
++++ w/Makefile
+@@ -203,6 +203,7 @@ rdna4:
+ .PHONY: test-rocm-streaming-unit
+ test-rocm-streaming-unit:
+ 	python3 tests/test_rocm_stream_pipeline.py
++	python3 tests/test_rocm_trace.py
+ 	python3 tests/test_rocm_streaming_regression.py
+ 	python3 tests/test_rocm_server_regression.py
+ 
+@@ -261,7 +262,7 @@ test-mxfp4-cuda: tests/test_mxfp4_cuda
+ 	./tests/test_mxfp4_cuda
+ endif
+ 
+-ds4.o: ds4.c ds4.h ds4_ssd.h ds4_distributed.h ds4_gpu.h
++ds4.o: ds4.c ds4.h ds4_ssd.h ds4_distributed.h ds4_gpu.h rocm/ds4_rocm_trace.h
+ 	$(CC) $(CFLAGS) -c -o $@ ds4.c
+ 
+ ds4_image.o: ds4_image.c ds4_image.h third_party/iris/jpeg.h third_party/iris/png.h
+diff --git i/ROCM_STREAMING_PLAN.md w/ROCM_STREAMING_PLAN.md
+index 370802c..985679b 100644
+--- i/ROCM_STREAMING_PLAN.md
++++ w/ROCM_STREAMING_PLAN.md
+@@ -381,3 +381,310 @@ Evidence: `/tmp/ds4-generation-perf/`, especially `screen-v2`, `reset-screen-v3`
+ `final-server`, `final-cli`, `image-transitions`, `disabled` and build/unit logs.
+ The service was stopped with permission while holding the RAM model open, so
+ its stop hook could not unmount the RAM copy. Production settings are unchanged.
++
++## Bounded long-context investigation, September 17 and 18, 2026
++
++Reference: rebuilt `c229363`, with archived CLI, server and benchmark binaries
++and hashes. No new inference optimization was accepted. Production settings,
++managed KV, cache budgets and reasoning-stream buffering remain unchanged.
++The bounded experiments below did not establish another 10–15% generation gain;
++they do not prove that further optimization is impossible.
++
++### Workloads and long-context baseline
++
++The short replay was recovered from the original document-inspection session,
++using its history as of the earlier screening run rather than later messages.
++The server confirms 1529 prompt tokens. The original system prompt and schemas
++were not saved; the same representative substitutes are retained.
++
++A new frozen repository-review request supplies runtime/MoE source excerpts as
++a tool result. It has 87441 actual prompt tokens, thinking/tools enabled,
++temperature 1, top-p 1 and seed 123. This is a representative coding workload,
++not an exact reproduction of the user's original conversation. Every server
++sample loads the vision encoder and uses steering scale 3, 262144 allocated
++context, managed KV, an 18 GiB streaming target and a 2 GiB free reserve.
++The long request contains no image; encoder residency is not image validation.
++
++Two fresh-process runs of the same baseline completed 1024 generated tokens
++with identical content/reasoning/tool fields and no abort:
++
++| Measurement | First run | Second run |
++|---|---:|---:|
++| Overall generation t/s | 7.91 | 7.95 |
++| After first 50-token interval t/s | 8.002 | 8.043 |
++| Request to first streamed output, seconds | 749.740 | 592.606 |
++| System-wide swap-in pages | 3614825 | 12385 |
++| System-wide swap-out pages | 217143 | 0 |
++| System-wide major faults | 1080 | 12776 |
++
++Pages are 4096 bytes. The first sample includes 13.79 GiB of system-wide
++swap-in and is retained. Compilation also occurred during the baseline
++prefills. Neither first-output sample is a clean latency comparison between
++builds. Both generations reached the token cap while emitting reasoning;
++ordinary answer text was not emitted. This validates repeatability over 1024
++steps, not completion of an answer or freedom from longer-run runtime faults.
++
++### Cost split
++
++The existing stage profiler disables a selected-load path and cannot profile
++this execution mode. A private diagnostic build under the evidence directory
++instead preserves scheduling eligibility, fences the compute stream at stage
++boundaries and adds GPU events around direct-pointer routed kernels. Its short
++and long outputs match their baseline outputs exactly. It changes scheduling
++and is not used for throughput acceptance.
++
++| Diagnostic cost, ms/token | Short replay | 87441-token replay |
++|---|---:|---:|
++| Routed-MoE stage after first 50 positions | 65.16 | 56.54 |
++| Host wait for missing experts, all positions | 52.35 | 44.00 |
++| Routed gate/up plus down GPU events, all positions | 9.05 | 8.94 |
++| Indexer-selection plus attention stages, after first 50 positions | 8.21 | 38.91 |
++| Q projection, attention output and shared-expert stages, after first 50 positions | 18.60 | 18.67 |
++
++These rows overlap and must not be summed. In particular, worker read/upload
++elapsed times overlap each other and GPU work. Stage wall time also includes
++host overhead. Expert data movement is the largest measured single cost;
++long-context indexer/attention is a substantial second cost.
++
++The short trace has 29415 misses out of 99072 selections, with 14.62 GiB of
++resident experts. The long trace has 63490 misses out of 264192 selections,
++with 14.57 GiB resident. Decode adds 202.06 and 426.67 GiB of read/upload jobs,
++respectively, including decode-weight reloads. The retirement hook emits a
++snapshot after each prefill chunk: subtract the **last** prefill snapshot,
++not the first, to isolate decode. Long-context traffic is about 0.417 GiB per
++generated token.
++
++The GPU-facing link reports PCIe 5.0 x16, but its upstream bridge/root link
++reports 8.0 GT/s x16, or PCIe 3.0 x16. This is a relevant transfer constraint,
++not proof that the software already saturates the link.
++
++### SDMA workaround measurement
++
++Three unprofiled alternating pairs on the short replay, 384 output tokens,
++compare explicit `HSA_ENABLE_SDMA=1` with `HSA_ENABLE_SDMA=0`. Generated fields
++match in every pair.
++
++| Median | SDMA on | SDMA off |
++|---|---:|---:|
++| Overall generation t/s | 9.54 | 8.44 |
++| After first 50-token interval t/s | 9.742 | 8.699 |
++| Request to first streamed output, seconds | 14.893 | 19.825 |
++
++Disabling SDMA costs 11.5% overall and 10.7% after the first interval. Individual
++steady rates are 9.746/9.742/9.723 versus 8.699/8.755/8.596. All samples remain
++included, including 52188 swap-out pages in the final candidate. Totals across
++the six processes are 124 swap-in pages, 52188 swap-out pages and 130 major
++faults, system-wide.
++
++ROCm remains 7.2.4. The known SDMA assertion did not recur in these runs, but
++nothing here fixes it. SDMA-off was not subjected to the long-context/image
++acceptance suite. No service environment was changed.
++
++The server regression runner now accepts only `DS4_*` overrides and the added
++`HSA_ENABLE_SDMA=0/1` override, validates them before launching processes, and
++records the SDMA environment per sample. Four new unit tests cover inherited
++settings, independent reference/candidate overrides, profiling defaults and
++rejection of unrelated/invalid overrides.
++
++### Rejected cache-policy trial
++
++A separate private build tested frequency-based victim selection with counters
++that survive eviction and halve every 128 tokens. Existing pin and
++current-selection protections were retained. One short screening pair matched
++output exactly but measured 9.742 versus 9.729 steady t/s. Misses fell only
++from 29415 to 28882, or 1.8%. This is not a demonstrated speedup and was not
++promoted to a long-context acceptance run.
++
++A captured routing trace reproduces both measured miss counts in an offline
++simulation at 2218 slots. Decay intervals of 0, 16, 32, 64, 128 and 256 tokens
++yield 29805, 28411, 27370, 28234, 28882 and 29538 misses. The best is about 7%
++below LRU on this one request, not a measured end-to-end improvement. No
++frequency policy or tuning flag was added to the checkout.
++
++Decode model arenas reserve 8.750 GiB and use 8.197 GiB in the short trial.
++The 0.553 GiB difference does not support expecting several more GiB of expert
++residency from smaller arenas alone.
++
++### Validation and evidence
++
++- RDNA4 rebuild, CPU streaming/policy/sanitizer tests and Q8 GPU exact tests pass.
++- Long baseline A/A, both diagnostic comparisons and all SDMA pairs match
++  generated fields. Server-runner unit coverage is now ten tests.
++- No accepted engine change exists, so the full logprob/image-continuation
++  acceptance suite was not rerun for the rejected cache experiment.
++- No pushes, production configuration changes, model deletions or rebases.
++
++Evidence is preserved in ignored `misc/rocm-vision-profile-20260917/`, copied
++from `/tmp/ds4-vision-profile-c229363/`. It includes baseline binaries/hashes,
++frozen requests/provenance, runner snapshots, logs, SSE/output JSON, swap
++counters, private diagnostic/experimental source patches and build commands,
++and the cache simulation. Private replay contents are not committed.
++
++## Next bounded implementation pass
++
++Status: started. No performance candidate selected; at most two isolated
++candidate changes may advance to real-model screening in this pass. Profiling
++instrumentation does not count as a performance candidate. The target remains
++a repeatable 10-15% steady generation gain, not a promised outcome.
++
++### 1. Asynchronous timeline
++
++Implement an opt-in, bounded ROCm trace with GPU events on the existing compute
++and upload streams and monotonic CPU spans for reads and waits. Do not insert
++device/event synchronization, alter stream dependencies, or enable the old
++stage-profiler flag. Resolve completed events after normal inference has
++drained work. Report incomplete records, capacity exhaustion and trace errors;
++never treat missing events as zero-duration work.
++
++Keep disabled tracing inert. Restrict the hooks to ROCm streaming; preserve
++selected-pointer execution, cache ownership and all other backend defaults.
++Capture a bounded steady-decode window after the first 50 tokens. GPU events
++share one GPU time origin; document uncertainty when aligning CPU timestamps.
++Use synthetic tests for event ordering, incomplete/error paths, bounded storage
++and disabled mode before real-model runs.
++
++Done when: short and 87441-token traces preserve generated output and distinguish
++GPU compute, uploads, CPU reads/waits and GPU idle intervals without additional
++fences. Measure tracing overhead against an untraced run. Trace timings remain
++diagnostic, not performance-acceptance numbers.
++
++Implementation checkpoint (2026-09-18):
++
++- Added `rocm/ds4_rocm_trace.cuh` and ROCm-only decode/read-worker hooks.
++  The trace uses preallocated timing events, bounded host storage and the
++  existing shutdown drain. It does not enable the old stage profiler or add
++  a device/stream/event wait. Unset tracing allocates nothing and makes no
++  GPU calls. Existing selected-pointer execution and upload scheduling remain.
++- `DS4_ROCM_DECODE_TRACE=<new-file>` enables a private Chrome-trace JSON file.
++  Existing files are refused. `DS4_ROCM_DECODE_TRACE_SKIP` defaults to 64
++  decode steps; `DS4_ROCM_DECODE_TRACE_TOKENS` defaults to 8, with a maximum
++  of 16. Storage is capped at 32768 records; exhaustion invalidates the trace
++  rather than silently treating omitted work as free.
++- `python3 tests/rocm_trace_summary.py <trace.json>` rejects incomplete,
++  failed or truncated captures and summarizes intervals and upload bytes.
++  GPU stream intervals include submission/queueing gaps. Uncovered intervals
++  may contain uninstrumented work. CPU/GPU origins are only approximately
++  aligned. **This is not yet an exact kernel-busy/device-idle timeline**, so
++  the full completion criterion above remains open.
++- RDNA4 build, Q8 GPU exact tests, existing streaming/server unit tests and
++  new sanitizer-backed trace tests pass. New tests cover disabled mode,
++  concurrent CPU spans, capacity exhaustion, event creation/record/query/
++  timing errors, unfinished spans, nonfinite timings and existing-file safety.
++- The 1529-token replay generated 384 identical tokens against archived
++  `c229363`. Eight traced positions (1593-1600) produced 13560 records with
++  zero drops, incomplete events or errors. Event-pool setup took 27.54 ms.
++  Reference/traced steady decode was 9.338/9.375 t/s in this single pair;
++  this does not establish window-level tracing overhead or a speedup.
++- First output was 170.82/15.19 seconds. System-wide swap-in was approximately
++  14.62 GiB/24.09 MiB, so these are not comparable first-output latencies.
++  Raw swap-out counters and all timings are retained too.
++- The 87441-token reference/traced pair completed 1024 generated tokens with
++  identical generated fields, both at the token cap. Eight traced positions
++  (87505-87512) produced 10144 records with zero drops, incomplete events or
++  errors. Reference/traced steady decode was 7.984/8.062 t/s and first output
++  was 589.96/590.60 seconds. System-wide swap-in was 27.54/3.91 MiB; swap-out
++  was 0/16.38 MiB. These single-pair diagnostic results are not a gain claim.
++- A tracing-disabled short pair also matched generated fields exactly, but
++  measured 9.664/8.974 steady t/s (-7.1%). The candidate sample had 450.75 MiB
++  system-wide swap-out versus none in the reference. Other CPU/VM workloads
++  were active in a subsequent process snapshot. This does not establish either
++  a code regression or its absence: retain the sample and repeat under quieter
++  conditions before accepting disabled-mode throughput. Window-level tracing
++  perturbation also remains unquantified.
++- All model processes have finished. Production services remain stopped.
++  Evidence and archived diagnostic binaries are under ignored, private
++  `misc/rocm-timeline-20260918/`. No performance candidate has been selected.
++  Full logprob, image-continuation and longer-generation acceptance is pending.
++
++### 2. Long-context indexer and attention
++
++Split the previously measured 38.91 ms/token into KV access, indexer projection,
++score computation, top-k selection and attention. Compare short and long active
++contexts while retaining 262144 allocated context, managed KV, vision residency
++and steering scale 3. Distinguish memory movement from GPU compute before
++choosing a kernel or scheduling change.
++
++Done when: the expensive operation has measured timings and one specific,
++correctness-preserving optimization hypothesis, or the measurements reject it.
++Do not port unrelated model/backend changes or rebase to pursue this step.
++
++First asynchronous breakdown (eight long-context decode steps, diagnostic
++stream intervals in ms/token): indexer projection 1.29, score 19.08, top-k 1.87,
++attention plus inverse RoPE 15.61. Short-context attention plus inverse RoPE
++was 6.86; that short context does not enter indexer top-k selection. Do not sum
++these with CPU wait/read timings or interpret them as exclusive GPU busy time.
++KV movement versus compute has not yet been isolated.
++
++The next hypothesis to test is increased head parallelism in
++`indexer_score_one_direct_kernel` (`rocm/ds4_rocm_indexer.cuh`): the current
++128-thread block processes 64 heads in 16 groups, with two block barriers per
++group. A microbenchmark should first separate GPU-resident from managed-cache
++costs and compare every output bit. Any replacement must retain each head's dot
++reduction and the existing ordered four-head accumulation; no lower precision
++or changed reduction order is authorized by this hypothesis. Top-k is not the
++first target on this evidence. No scoring kernel has been changed yet.
++
++### 3. Targeted transfer benchmark
++
++Measure the existing four-worker, double-buffered RAM-read/upload path using
++production expert sizes and compare it with a copy-only measurement at the same
++sizes. Record bytes, elapsed time, worker count, completion checks and the full
++PCIe link path. Keep reads and overlapped uploads separate in the report.
++
++Only select a transfer change if the trace or benchmark shows avoidable copies,
++waits or unused transfer capacity. If bandwidth headroom is small, stop tuning
++that path instead of repeating cache-size or eviction-policy sweeps.
++
++The captured upload job sizes are 2162688 and 2752512 bytes. Requested bytes
++per union of GPU upload intervals measured 11.86 GiB/s in the short window and
++11.82 GiB/s in the long window. These intervals include queueing/submission
++costs; this is not proven bus utilization or saturation. The same-size,
++four-worker copy-only benchmark is still required. The eight-step windows
++uploaded 0.611/0.261 GiB per token; do not extrapolate those route-dependent
++samples to whole-generation averages.
++
++### 4. SDMA runtime investigation
++
++Check the installed ROCm runtime and upstream source for a confirmed fix to the
++`BlitSdma<true>::PendingBytes()` ring-index assertion. Record the relevant source
++and revision; do not infer a fix merely from a newer version number. If needed,
++prepare a separately loaded runtime experiment without replacing system
++libraries. Ask before changing the installed ROCm stack or production services.
++
++SDMA-off remains a measured fallback with a 10.7% steady-throughput penalty on
++the short replay, not a validated long-context solution. Any candidate runtime
++must pass long-generation and image/continuation tests before being proposed
++for production. If the crash recurs, retain the core and logs.
++
++Read-only checkpoint (2026-09-18): installed `hsa-rocr` and `hip-runtime-amd`
++are 7.2.4-1. The upstream source retrieved at
++[`d1de02dae7804350300c45cdc5f894a6785d2ae6`](https://github.com/ROCm/rocm-systems/blob/d1de02dae7804350300c45cdc5f894a6785d2ae6/projects/rocr-runtime/runtime/hsa-runtime/core/inc/amd_blit_sdma.h)
++still uses rounded-up eight-byte indexing into `bytes_written_`. For an
++8 MiB ring, the hypothetical wrapped offset `0x7ffffc` still computes index
++1048576 for a 1048576-entry vector. That reproduces the boundary arithmetic,
++not the unavailable original offending offset. No confirmed upstream fix or
++replacement runtime has been validated; installed libraries are unchanged.
++Retrieved source, revision and file history are retained with this pass's
++private evidence.
++
++### Acceptance and stopping rules
++
++- Test one candidate at a time against the archived `c229363` baseline.
++- Screen at most two candidates. Record failures and rejected hypotheses.
++- Require three alternating unprofiled pairs on representative workloads for a
++  gain claim. Keep first-output/transition timings separate from steady decode.
++- Retain noisy samples and system-wide swap counters. Do not compile or run a
++  second model during acceptance measurements; respect the instance lock.
++- Run the RDNA4 build, CPU streaming tests and Q8 GPU exact tests. Compare saved
++  top-20 logprob JSON on short, medium and 12583-token prompts with greedy steps.
++- Check two-turn and image stdout equality plus a steered image/text/image
++  sequence. Recheck the 87441-token workload and test long generations beyond
++  the existing 1024-token coverage. Record actual completion and token caps.
++- Test each new optimization's disable switch. Preserve managed KV, vision,
++  steering 3, reasoning-stream buffering and CUDA/Metal/CPU/distributed/SSD
++  defaults. Ask before CUDA or distributed testing.
++- A faster configuration that still aborts does not pass production acceptance.
++  If this bounded pass finds no validated gain, report that result without
++  claiming an absolute hardware/software ceiling.
++- Preserve evidence in an ignored, private `misc/` directory. Do not push,
++  delete models, change Pi configuration or silently restart production.
+diff --git i/ds4.c w/ds4.c
+index e7291c4..d997353 100644
+--- i/ds4.c
++++ w/ds4.c
+@@ -42,6 +42,9 @@
+ 
+ #include "ds4.h"
+ #include "ds4_distributed.h"
++#ifdef DS4_ROCM_BUILD
++#include "rocm/ds4_rocm_trace.h"
++#endif
+ #include "ds4_image.h"
+ #include "ds4_tp.h"
+ 
+@@ -22802,6 +22805,16 @@ static bool metal_graph_encode_decode_layer_phase(
+     bool ok = true;
+     const bool decode_stage_profile = metal_graph_decode_stage_profile_enabled(il);
+     double decode_stage_t0 = decode_stage_profile ? now_sec() : 0.0;
++#ifdef DS4_ROCM_BUILD
++    if (g->ssd_streaming && g->tp_world < 2 && !g->placement &&
++        phase == METAL_DECODE_LAYER_FULL) ds4_rocm_trace_layer(il, pos);
++#define DS4_ROCM_TRACE_STAGE(name) do { \
++        if (ok && g->ssd_streaming && g->tp_world < 2 && !g->placement) \
++            ds4_rocm_trace_stage(name); \
++    } while (0)
++#else
++#define DS4_ROCM_TRACE_STAGE(name) ((void)0)
++#endif
+     const bool fuse_shared_gate_up =
+         !g->quality &&
+         g->tp_world < 2 &&
+@@ -22850,6 +22863,7 @@ static bool metal_graph_encode_decode_layer_phase(
+         layer->ffn_gate_inp->dim[0] == DS4_N_EMBD &&
+         layer->ffn_gate_inp->dim[1] == DS4_N_EXPERT;
+ #define DS4_METAL_PROFILE_DECODE_STAGE(name) do { \
++        DS4_ROCM_TRACE_STAGE(name); \
+         if (ok && decode_stage_profile) { \
+             ok = metal_graph_layer_stage_profile_boundary("decode", (name), il, pos, 1, &decode_stage_t0); \
+         } \
+@@ -23924,6 +23938,7 @@ static bool metal_graph_encode_decode_layer_phase(
+                                                          DS4_N_EMBD, DS4_N_INDEXER_HEAD,
+                                                          metal_graph_attn_norm(g), 1) != 0;
+                 const float index_scale = 1.0f / sqrtf((float)(DS4_N_INDEXER_HEAD_DIM * DS4_N_INDEXER_HEAD));
++                DS4_ROCM_TRACE_STAGE("indexer_projection");
+                 if (ok && decode_index_stage_profile) {
+                     ok = metal_graph_indexer_stage_profile_boundary(NULL,
+                                                                     il,
+@@ -23940,6 +23955,7 @@ static bool metal_graph_encode_decode_layer_phase(
+                                                                 DS4_N_INDEXER_HEAD,
+                                                                 DS4_N_INDEXER_HEAD_DIM,
+                                                                 index_scale) != 0;
++                DS4_ROCM_TRACE_STAGE("indexer_score");
+                 if (ok && decode_index_stage_profile) {
+                     ok = metal_graph_indexer_stage_profile_boundary("decode_score",
+                                                                     il,
+@@ -23953,6 +23969,7 @@ static bool metal_graph_encode_decode_layer_phase(
+                                                            g->layer_n_index_comp[il],
+                                                            1,
+                                                            DS4_N_INDEXER_TOP_K) != 0;
++                DS4_ROCM_TRACE_STAGE("indexer_topk");
+                 if (ok && decode_index_stage_profile) {
+                     ok = metal_graph_indexer_stage_profile_boundary("decode_topk",
+                                                                     il,
+@@ -26231,6 +26248,7 @@ static bool metal_graph_encode_decode_layer_phase(
+     }
+     DS4_METAL_PROFILE_DECODE_STAGE("ffn_hc_post");
+ #undef DS4_METAL_PROFILE_DECODE_STAGE
++#undef DS4_ROCM_TRACE_STAGE
+     if (ok) {
+         metal_graph_debug_dump_tensor("hc_ffn_post", metal_graph_after_ffn_hc(g), hc_dim, il, pos);
+     }
+diff --git i/ds4_rocm.h w/ds4_rocm.h
+index 50481b8..6c5db69 100644
+--- i/ds4_rocm.h
++++ w/ds4_rocm.h
+@@ -64,6 +64,8 @@
+ #define cudaEventCreateWithFlags hipEventCreateWithFlags
+ #define cudaEventDestroy hipEventDestroy
+ #define cudaEventRecord hipEventRecord
++#define cudaEventQuery hipEventQuery
++#define cudaErrorNotReady hipErrorNotReady
+ #define cudaEventSynchronize hipEventSynchronize
+ #define cudaEventElapsedTime hipEventElapsedTime
+ #define cudaEventDisableTiming hipEventDisableTiming
+diff --git i/rocm/ds4_rocm_runtime.cuh w/rocm/ds4_rocm_runtime.cuh
+index ae26fcf..0fc4ab7 100644
+--- i/rocm/ds4_rocm_runtime.cuh
++++ w/rocm/ds4_rocm_runtime.cuh
+@@ -1,4 +1,5 @@
+ #include "ds4_rocm_stream_policy.h"
++#include "ds4_rocm_trace.cuh"
+ #if defined(__linux__)
+ #include <sys/vfs.h>
+ #include <linux/magic.h>
+@@ -2295,13 +2296,19 @@ static int cuda_stream_read_job_upload(
+         if (job) job->errnum = EINVAL;
+         return 0;
+     }
++    const uint32_t trace_upload = rocm_trace_upload_begin(stream, job->bytes);
+     cudaError_t err = cudaMemcpyAsync(job->dst,
+                                       job->host_buf,
+                                       (size_t)job->bytes,
+                                       cudaMemcpyHostToDevice,
+                                       stream);
++    rocm_trace_upload_end(trace_upload, stream, err == cudaSuccess);
+     if (err == cudaSuccess && defer_wait) return 1;
+-    if (err == cudaSuccess) err = cudaStreamSynchronize(stream);
++    if (err == cudaSuccess) {
++        const uint32_t trace_wait = rocm_trace_cpu_begin("upload_wait", (uint64_t)(uintptr_t)stream, job->bytes);
++        err = cudaStreamSynchronize(stream);
++        rocm_trace_cpu_end(trace_wait, err == cudaSuccess);
++    }
+     if (err != cudaSuccess) {
+         fprintf(stderr,
+                 DS4_GPU_LOG_PREFIX "streaming read-worker upload failed: %s\n",
+@@ -2324,7 +2331,9 @@ static void cuda_stream_read_pipeline_complete(
+         uint64_t read_us, double upload_t0) {
+     const int profile = g_stream_read_profile_enabled == 1;
+     if (job->ok) {
++        const uint32_t trace_wait = rocm_trace_cpu_begin("upload_wait", (uint64_t)(uintptr_t)stream, job->bytes);
+         const cudaError_t err = cudaStreamSynchronize(stream);
++        rocm_trace_cpu_end(trace_wait, err == cudaSuccess);
+         if (err == cudaSuccess) {
+             job->uploaded = 1;
+             if (!job->direct) cuda_model_drop_file_pages(job->offset, job->bytes);
+@@ -2385,7 +2394,11 @@ static void *cuda_stream_read_pipeline_worker(void *arg) {
+ 
+         const int profile = g_stream_read_profile_enabled == 1;
+         const double read_t0 = profile ? cuda_wall_sec() : 0;
+-        if (job) cuda_stream_read_job_run(job, stage, stage_bytes);
++        if (job) {
++            const uint32_t trace_read = rocm_trace_cpu_begin("read", (uint64_t)(uintptr_t)stream, job->bytes);
++            cuda_stream_read_job_run(job, stage, stage_bytes);
++            rocm_trace_cpu_end(trace_read, job->ok);
++        }
+         const uint64_t read_us = profile && job ?
+             cuda_stream_read_profile_us(cuda_wall_sec() - read_t0) : 0;
+         if (pending) {
+@@ -2430,7 +2443,9 @@ static void *cuda_stream_read_worker(void *arg) {
+ 
+         const int profile = g_stream_read_profile_enabled == 1;
+         const double read_t0 = profile ? cuda_wall_sec() : 0.0;
++        const uint32_t trace_read = rocm_trace_cpu_begin("read", (uint64_t)(uintptr_t)g_stream_read_upload_streams[worker_id], job->bytes);
+         cuda_stream_read_job_run(job, stage, stage_bytes);
++        rocm_trace_cpu_end(trace_read, job->ok);
+         uint64_t read_us = 0;
+         uint64_t upload_us = 0;
+         if (profile) {
+@@ -2682,9 +2697,11 @@ static int cuda_stream_read_jobs_wait(cuda_stream_read_job *jobs, uint32_t count
+     if (!jobs || count == 0) return 1;
+     const int profile = g_stream_read_profile_enabled == 1;
+     const double wait_t0 = profile ? cuda_wall_sec() : 0.0;
++    const uint32_t trace_wait = rocm_trace_cpu_begin("read_jobs_wait", 0, 0);
+     pthread_mutex_lock(&g_stream_read_mutex);
+     if (g_stream_read_active_jobs != jobs) {
+         pthread_mutex_unlock(&g_stream_read_mutex);
++        rocm_trace_cpu_end(trace_wait, 0);
+         fprintf(stderr, DS4_GPU_LOG_PREFIX "streaming read wait received inactive job set\n");
+         return 0;
+     }
+@@ -2719,6 +2736,7 @@ static int cuda_stream_read_jobs_wait(cuda_stream_read_job *jobs, uint32_t count
+             ok = 0;
+         }
+     }
++    rocm_trace_cpu_end(trace_wait, ok);
+     return ok;
+ }
+ 
+@@ -6430,6 +6448,7 @@ extern "C" void ds4_gpu_cleanup(void) {
+     cuda_model_range_release_all();
+     cuda_q8_f16_cache_release_all();
+     cuda_stream_selected_cache_release();
++    rocm_trace_finish();
+     g_q8_f16_disabled_after_oom = 0;
+     g_q8_f16_disabled_for_multi_model = 0;
+     g_q8_f16_budget_notice_printed = 0;
+diff --git i/tests/rocm_server_regression.py w/tests/rocm_server_regression.py
+index cf782c5..23d012c 100644
+--- i/tests/rocm_server_regression.py
++++ w/tests/rocm_server_regression.py
+@@ -71,6 +71,23 @@ def generation_metrics(log, tokens):
+     return result
+ 
+ 
++def sample_environment(overrides, inherited, profile=False):
++    env = {k: v for k, v in inherited.items() if not k.startswith("DS4_")}
++    env.update(LD_LIBRARY_PATH="/opt/rocm/lib:" + env.get("LD_LIBRARY_PATH", ""),
++               DS4_ROCM_STREAM_FREE_RESERVE_GB="2", DS4_SSD_AUTO_CACHE_PCT="65")
++    if profile:
++        env.update(DS4_SERVER_DECODE_PROFILE="1", DS4_ROCM_STREAM_CACHE_STATS="1",
++                   DS4_ROCM_STREAM_READ_PROFILE="1")
++    for item in overrides:
++        key, sep, value = item.partition("=")
++        if not sep or not (key.startswith("DS4_") or key == "HSA_ENABLE_SDMA"):
++            raise ValueError("Environment overrides require DS4_NAME=value or HSA_ENABLE_SDMA=0/1")
++        if key == "HSA_ENABLE_SDMA" and value not in ("0", "1"):
++            raise ValueError("HSA_ENABLE_SDMA must be 0 or 1")
++        env[key] = value
++    return env
++
++
+ def main():
+     p = argparse.ArgumentParser(description=__doc__)
+     p.add_argument("--request", required=True)
+@@ -92,6 +109,11 @@ def main():
+     a = p.parse_args()
+     if a.tokens < 1 or a.repeats < 1 or a.seed <= 0 or a.timeout <= 0:
+         p.error("Tokens, repeats, seed and timeout must be positive")
++    try:
++        envs = {kind: sample_environment(getattr(a, kind + "_env"), os.environ, a.profile)
++                for kind in ("reference", "candidate")}
++    except ValueError as exc:
++        p.error(str(exc))
+     payload = json.loads(Path(a.request).read_text())
+     payload.update(stream=True, stream_options={"include_usage": True},
+                    seed=a.seed, max_tokens=a.tokens)
+@@ -115,17 +137,7 @@ def main():
+             with socket.socket() as probe:
+                 probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                 probe.bind(("127.0.0.1", a.port))
+-            env = {k: v for k, v in os.environ.items() if not k.startswith("DS4_")}
+-            env.update(LD_LIBRARY_PATH="/opt/rocm/lib:" + env.get("LD_LIBRARY_PATH", ""),
+-                       DS4_ROCM_STREAM_FREE_RESERVE_GB="2", DS4_SSD_AUTO_CACHE_PCT="65")
+-            if a.profile:
+-                env.update(DS4_SERVER_DECODE_PROFILE="1", DS4_ROCM_STREAM_CACHE_STATS="1",
+-                           DS4_ROCM_STREAM_READ_PROFILE="1")
+-            for item in getattr(a, kind + "_env"):
+-                key, sep, value = item.partition("=")
+-                if not sep or not key.startswith("DS4_"):
+-                    p.error("Environment overrides require DS4_NAME=value")
+-                env[key] = value
++            env = envs[kind]
+             args = [binaries[kind], "-m", str(Path(a.model).resolve()), "--ctx", "262144",
+                     "--host", "127.0.0.1", "--port", str(a.port), "--ssd-streaming",
+                     "--ssd-streaming-cold", "--ssd-streaming-cache-experts", "18GB"]
+@@ -136,7 +148,8 @@ def main():
+                          "--dir-steering-ffn", str(a.steering_scale)]
+             before, started = vmstat(), time.monotonic()
+             record = {"name": work.name, "args": args,
+-                      "ds4_environment": {k: v for k, v in env.items() if k.startswith("DS4_")}}
++                      "ds4_environment": {k: v for k, v in env.items() if k.startswith("DS4_")},
++                      "hsa_environment": {k: env[k] for k in ("HSA_ENABLE_SDMA",) if k in env}}
+             events, error, conn = [], None, None
+             with (work / "server.log").open("wb") as log:
+                 proc = subprocess.Popen(args, env=env, cwd=work, stdout=log, stderr=log)
+diff --git i/tests/test_rocm_server_regression.py w/tests/test_rocm_server_regression.py
+index 431f854..850648a 100644
+--- i/tests/test_rocm_server_regression.py
++++ w/tests/test_rocm_server_regression.py
+@@ -2,7 +2,7 @@ import copy
+ import sys
+ import unittest
+ sys.dont_write_bytecode = True
+-from rocm_server_regression import generation_metrics, summarize_events
++from rocm_server_regression import generation_metrics, sample_environment, summarize_events
+ 
+ 
+ def fixture():
+@@ -56,6 +56,38 @@ class ServerReplayTests(unittest.TestCase):
+         b[2]["data"]["choices"][0]["delta"]["tool_calls"][0]["function"]["arguments"] = "[]"
+         self.assertNotEqual(summarize_events(a)[0], summarize_events(b)[0])
+ 
++    def test_environment_removes_inherited_tuning_without_mutation(self):
++        inherited = {"DS4_OLD_TUNING": "1", "LD_LIBRARY_PATH": "/example",
++                     "PATH": "/bin", "HSA_ENABLE_SDMA": "0"}
++        before = inherited.copy()
++        env = sample_environment([], inherited)
++        self.assertNotIn("DS4_OLD_TUNING", env)
++        self.assertEqual(env["DS4_ROCM_STREAM_FREE_RESERVE_GB"], "2")
++        self.assertEqual(env["LD_LIBRARY_PATH"], "/opt/rocm/lib:/example")
++        self.assertEqual(env["HSA_ENABLE_SDMA"], "0")
++        self.assertEqual(inherited, before)
++
++    def test_sdma_overrides_are_independent_between_samples(self):
++        inherited = {"HSA_ENABLE_SDMA": "0"}
++        reference = sample_environment(["HSA_ENABLE_SDMA=1"], inherited)
++        candidate = sample_environment(["HSA_ENABLE_SDMA=0"], inherited)
++        self.assertEqual(reference["HSA_ENABLE_SDMA"], "1")
++        self.assertEqual(candidate["HSA_ENABLE_SDMA"], "0")
++        self.assertNotIn("HSA_ENABLE_SDMA", sample_environment([], {}))
++
++    def test_profile_and_explicit_ds4_overrides(self):
++        env = sample_environment(["DS4_ROCM_STREAM_FREE_RESERVE_GB=3"], {}, True)
++        self.assertEqual(env["DS4_ROCM_STREAM_FREE_RESERVE_GB"], "3")
++        self.assertEqual(env["DS4_SERVER_DECODE_PROFILE"], "1")
++        self.assertEqual(env["DS4_ROCM_STREAM_READ_PROFILE"], "1")
++        self.assertNotIn("DS4_SERVER_DECODE_PROFILE", sample_environment([], {}))
++
++    def test_environment_rejects_unrelated_or_invalid_overrides(self):
++        for item in ("LD_PRELOAD=library.so", "PATH=/tmp", "DS4_MISSING_VALUE",
++                     "HSA_ENABLE_SDMA=", "HSA_ENABLE_SDMA=2", "HSA_ENABLE_SDMA=no"):
++            with self.subTest(item=item), self.assertRaises(ValueError):
++                sample_environment([item], {})
++
+     def test_generation_metrics_exclude_first_interval(self):
+         log = ("gen=50 TOOLS THINKING decoding chunk=5.00 t/s avg=5.00 t/s 10.000s\n"
+                "gen=150 TOOLS decoding chunk=10.00 t/s avg=7.50 t/s 20.000s\n")
+diff --git i/tests/test_rocm_stream_pipeline.c w/tests/test_rocm_stream_pipeline.c
+index 022cede..5d5deaf 100644
+--- i/tests/test_rocm_stream_pipeline.c
++++ w/tests/test_rocm_stream_pipeline.c
+@@ -82,6 +82,18 @@ static void cuda_stream_read_job_run(cuda_stream_read_job *job, void *stage, uin
+     job->ok = 1;
+ }
+ 
++/* Disabled trace hooks must not change the worker's completion protocol. */
++static uint32_t rocm_trace_cpu_begin(const char *name, uint64_t lane, uint64_t bytes) {
++    (void)name; (void)lane; (void)bytes; return 0;
++}
++static void rocm_trace_cpu_end(uint32_t id, int ok) { (void)id; (void)ok; }
++static uint32_t rocm_trace_upload_begin(cudaStream_t stream, uint64_t bytes) {
++    (void)stream; (void)bytes; return 0;
++}
++static void rocm_trace_upload_end(uint32_t id, cudaStream_t stream, int ok) {
++    (void)id; (void)stream; (void)ok;
++}
++
+ #include "ds4_stream_pipeline_under_test.h"
+ 
+ static void run_case(unsigned count, unsigned workers, int failure, int profile) {
+diff --git 1/rocm/ds4_rocm_trace.h 2/rocm/ds4_rocm_trace.h
+new file mode 100644
+index 0000000..bccdeb0
+--- /dev/null
++++ 2/rocm/ds4_rocm_trace.h
+@@ -0,0 +1,13 @@
++#ifndef DS4_ROCM_TRACE_H
++#define DS4_ROCM_TRACE_H
++#include <stdint.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
++/* Diagnostic markers only. Neither entry point waits for GPU work. */
++void ds4_rocm_trace_layer(uint32_t layer, uint32_t position);
++void ds4_rocm_trace_stage(const char *name);
++#ifdef __cplusplus
++}
++#endif
++#endif
+diff --git 1/rocm/ds4_rocm_trace.cuh 2/rocm/ds4_rocm_trace.cuh
+new file mode 100644
+index 0000000..7c9d30e
+--- /dev/null
++++ 2/rocm/ds4_rocm_trace.cuh
+@@ -0,0 +1,260 @@
++/* Bounded, opt-in decode trace. GPU events bracket stream intervals, not
++ * individual kernel execution: an interval can include submission/scheduling
++ * gaps. CPU and GPU tracks have separate clock domains, approximately aligned
++ * at origin enqueue. Do not infer exact cross-domain overlap or device idle.
++ *
++ * Events are preallocated before the warmup window. Finish runs after the
++ * runtime's existing drain, uses queries only, and reports every lost record.
++ * Keep this C-compatible so a mock GPU can test the actual implementation. */
++#include "ds4_rocm_trace.h"
++#include <errno.h>
++#include <math.h>
++#include <pthread.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++
++#ifndef DS4_ROCM_TRACE_CAP
++#define DS4_ROCM_TRACE_CAP 32768u
++#endif
++#define DS4_ROCM_TRACE_EVENTS (2u * DS4_ROCM_TRACE_CAP + 1u)
++
++typedef struct {
++    const char *name;
++    uint64_t lane, bytes;
++    uint32_t layer, position, start_event, end_event;
++    double start_us, end_us;
++    int gpu, complete, ok;
++} ds4_rocm_trace_record;
++
++static struct {
++    int initialized, enabled, active;
++    FILE *file;
++    ds4_rocm_trace_record *records;
++    cudaEvent_t *events;
++    uint32_t count, created, used, previous;
++    uint32_t skip, tokens, step, last_position, layer, position;
++    uint32_t captured_tokens, dropped, incomplete, errors;
++    double cpu_origin_us, origin_enqueue_us, setup_us;
++} g_rocm_trace;
++static pthread_mutex_t g_rocm_trace_mutex = PTHREAD_MUTEX_INITIALIZER;
++
++static double rocm_trace_now_us(void) {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (double)ts.tv_sec * 1e6 + (double)ts.tv_nsec / 1000.0;
++}
++
++static int rocm_trace_option(const char *key, uint32_t fallback,
++                              uint32_t maximum, uint32_t *out) {
++    const char *s = getenv(key);
++    if (!s) { *out = fallback; return 1; }
++    if (!*s || *s == '-') return 0;
++    char *end = NULL;
++    errno = 0;
++    unsigned long value = strtoul(s, &end, 10);
++    if (errno || end == s || *end || value > maximum) return 0;
++    *out = (uint32_t)value;
++    return 1;
++}
++
++static void rocm_trace_init(void) {
++    g_rocm_trace.initialized = 1;
++    const char *path = getenv("DS4_ROCM_DECODE_TRACE");
++    if (!path || !*path) return;
++    if (!rocm_trace_option("DS4_ROCM_DECODE_TRACE_SKIP", 64, UINT32_MAX,
++                            &g_rocm_trace.skip) ||
++        !rocm_trace_option("DS4_ROCM_DECODE_TRACE_TOKENS", 8, 16,
++                            &g_rocm_trace.tokens) || !g_rocm_trace.tokens) {
++        fprintf(stderr, "ds4: invalid ROCm decode trace window\n");
++        return;
++    }
++    /* Never overwrite an earlier trace or user file. */
++    g_rocm_trace.file = fopen(path, "wx");
++    if (!g_rocm_trace.file) {
++        fprintf(stderr, "ds4: cannot create ROCm trace %s: %s\n", path, strerror(errno));
++        return;
++    }
++    const double start = rocm_trace_now_us();
++    g_rocm_trace.records = (ds4_rocm_trace_record *)calloc(DS4_ROCM_TRACE_CAP, sizeof(*g_rocm_trace.records));
++    g_rocm_trace.events = (cudaEvent_t *)calloc(DS4_ROCM_TRACE_EVENTS, sizeof(*g_rocm_trace.events));
++    if (!g_rocm_trace.records || !g_rocm_trace.events) { g_rocm_trace.errors++; return; }
++    for (; g_rocm_trace.created < DS4_ROCM_TRACE_EVENTS; g_rocm_trace.created++) {
++        if (cudaEventCreate(&g_rocm_trace.events[g_rocm_trace.created]) != cudaSuccess) {
++            g_rocm_trace.errors++;
++            return;
++        }
++    }
++    g_rocm_trace.cpu_origin_us = rocm_trace_now_us();
++    if (cudaEventRecord(g_rocm_trace.events[0], 0) != cudaSuccess) {
++        g_rocm_trace.errors++;
++        return;
++    }
++    g_rocm_trace.origin_enqueue_us = rocm_trace_now_us() - g_rocm_trace.cpu_origin_us;
++    g_rocm_trace.setup_us = rocm_trace_now_us() - start;
++    g_rocm_trace.used = 1;
++    g_rocm_trace.last_position = UINT32_MAX;
++    g_rocm_trace.enabled = 1;
++}
++
++/* All pool access is protected by the trace mutex. Active is also atomic for
++ * the disabled fast path in read workers; they never initialize the tracer. */
++static uint32_t rocm_trace_marker(cudaStream_t stream) {
++    if (g_rocm_trace.used == g_rocm_trace.created) {
++        g_rocm_trace.dropped++;
++        return UINT32_MAX;
++    }
++    uint32_t index = g_rocm_trace.used++;
++    if (cudaEventRecord(g_rocm_trace.events[index], stream) != cudaSuccess) {
++        g_rocm_trace.errors++;
++        return UINT32_MAX;
++    }
++    return index;
++}
++
++static uint32_t rocm_trace_record(const char *name, uint64_t lane, uint64_t bytes, int gpu) {
++    if (g_rocm_trace.count == DS4_ROCM_TRACE_CAP) {
++        g_rocm_trace.dropped++;
++        return 0;
++    }
++    ds4_rocm_trace_record *r = &g_rocm_trace.records[g_rocm_trace.count++];
++    r->name = name; r->lane = lane; r->bytes = bytes; r->gpu = gpu;
++    r->layer = g_rocm_trace.layer; r->position = g_rocm_trace.position;
++    return g_rocm_trace.count;
++}
++
++#ifdef __cplusplus
++extern "C"
++#endif
++void ds4_rocm_trace_layer(uint32_t layer, uint32_t position) {
++    if (!g_rocm_trace.initialized) rocm_trace_init();
++    if (!g_rocm_trace.enabled) return;
++    pthread_mutex_lock(&g_rocm_trace_mutex);
++    if (position != g_rocm_trace.last_position) {
++        g_rocm_trace.last_position = position;
++        g_rocm_trace.step++;
++        if (g_rocm_trace.step > g_rocm_trace.skip &&
++            g_rocm_trace.step - g_rocm_trace.skip <= g_rocm_trace.tokens)
++            g_rocm_trace.captured_tokens++;
++    }
++    const int active = g_rocm_trace.step > g_rocm_trace.skip &&
++        g_rocm_trace.step - g_rocm_trace.skip <= g_rocm_trace.tokens;
++    g_rocm_trace.layer = layer;
++    g_rocm_trace.position = position;
++    if (active) g_rocm_trace.previous = rocm_trace_marker(0);
++    __atomic_store_n(&g_rocm_trace.active, active, __ATOMIC_RELEASE);
++    pthread_mutex_unlock(&g_rocm_trace_mutex);
++}
++
++#ifdef __cplusplus
++extern "C"
++#endif
++void ds4_rocm_trace_stage(const char *name) {
++    if (!__atomic_load_n(&g_rocm_trace.active, __ATOMIC_ACQUIRE)) return;
++    pthread_mutex_lock(&g_rocm_trace_mutex);
++    const uint32_t end = rocm_trace_marker(0);
++    if (g_rocm_trace.previous != UINT32_MAX && end != UINT32_MAX) {
++        uint32_t id = rocm_trace_record(name, 0, 0, 1);
++        if (id) {
++            ds4_rocm_trace_record *r = &g_rocm_trace.records[id - 1];
++            r->start_event = g_rocm_trace.previous; r->end_event = end;
++            r->complete = r->ok = 1;
++        }
++    }
++    g_rocm_trace.previous = end;
++    /* Selected uploads have drained before this layer's final HC stage. */
++    if (strcmp(name, "ffn_hc_post") == 0)
++        __atomic_store_n(&g_rocm_trace.active, 0, __ATOMIC_RELEASE);
++    pthread_mutex_unlock(&g_rocm_trace_mutex);
++}
++
++static uint32_t rocm_trace_cpu_begin(const char *name, uint64_t lane, uint64_t bytes) {
++    if (!__atomic_load_n(&g_rocm_trace.active, __ATOMIC_ACQUIRE)) return 0;
++    pthread_mutex_lock(&g_rocm_trace_mutex);
++    uint32_t id = __atomic_load_n(&g_rocm_trace.active, __ATOMIC_RELAXED) ?
++        rocm_trace_record(name, lane, bytes, 0) : 0;
++    if (id) g_rocm_trace.records[id - 1].start_us = rocm_trace_now_us() - g_rocm_trace.cpu_origin_us;
++    pthread_mutex_unlock(&g_rocm_trace_mutex);
++    return id;
++}
++
++static void rocm_trace_cpu_end(uint32_t id, int ok) {
++    if (!id) return;
++    pthread_mutex_lock(&g_rocm_trace_mutex);
++    ds4_rocm_trace_record *r = &g_rocm_trace.records[id - 1];
++    r->end_us = rocm_trace_now_us() - g_rocm_trace.cpu_origin_us;
++    r->complete = 1; r->ok = ok;
++    pthread_mutex_unlock(&g_rocm_trace_mutex);
++}
++
++static uint32_t rocm_trace_upload_begin(cudaStream_t stream, uint64_t bytes) {
++    if (!__atomic_load_n(&g_rocm_trace.active, __ATOMIC_ACQUIRE)) return 0;
++    pthread_mutex_lock(&g_rocm_trace_mutex);
++    uint32_t id = __atomic_load_n(&g_rocm_trace.active, __ATOMIC_RELAXED) ?
++        rocm_trace_record("upload", (uint64_t)(uintptr_t)stream, bytes, 1) : 0;
++    if (id) g_rocm_trace.records[id - 1].start_event = rocm_trace_marker(stream);
++    pthread_mutex_unlock(&g_rocm_trace_mutex);
++    return id;
++}
++
++static void rocm_trace_upload_end(uint32_t id, cudaStream_t stream, int ok) {
++    if (!id) return;
++    pthread_mutex_lock(&g_rocm_trace_mutex);
++    ds4_rocm_trace_record *r = &g_rocm_trace.records[id - 1];
++    r->end_event = rocm_trace_marker(stream);
++    r->complete = 1; r->ok = ok;
++    pthread_mutex_unlock(&g_rocm_trace_mutex);
++}
++
++static void rocm_trace_finish(void) {
++    /* Called after existing shutdown synchronization and read-worker join. */
++    __atomic_store_n(&g_rocm_trace.active, 0, __ATOMIC_RELEASE);
++    if (!g_rocm_trace.initialized) return;
++    FILE *fp = g_rocm_trace.file;
++    if (fp) {
++        fprintf(fp, "{\"traceEvents\":[\n");
++        uint32_t written = 0;
++        for (uint32_t i = 0; i < g_rocm_trace.count; i++) {
++            ds4_rocm_trace_record *r = &g_rocm_trace.records[i];
++            if (!r->complete) { g_rocm_trace.incomplete++; continue; }
++            if (r->gpu) {
++                if (r->start_event == UINT32_MAX || r->end_event == UINT32_MAX) continue;
++                cudaError_t origin = cudaEventQuery(g_rocm_trace.events[0]);
++                cudaError_t begin = cudaEventQuery(g_rocm_trace.events[r->start_event]);
++                cudaError_t end = cudaEventQuery(g_rocm_trace.events[r->end_event]);
++                if (origin == cudaErrorNotReady || begin == cudaErrorNotReady || end == cudaErrorNotReady) {
++                    g_rocm_trace.incomplete++; continue;
++                }
++                float start_ms = 0, duration_ms = 0;
++                if (origin != cudaSuccess || begin != cudaSuccess || end != cudaSuccess ||
++                    cudaEventElapsedTime(&start_ms, g_rocm_trace.events[0], g_rocm_trace.events[r->start_event]) != cudaSuccess ||
++                    cudaEventElapsedTime(&duration_ms, g_rocm_trace.events[r->start_event], g_rocm_trace.events[r->end_event]) != cudaSuccess ||
++                    !isfinite(start_ms) || !isfinite(duration_ms) || duration_ms < 0) {
++                    g_rocm_trace.errors++; continue;
++                }
++                r->start_us = (double)start_ms * 1000.0;
++                r->end_us = r->start_us + (double)duration_ms * 1000.0;
++            }
++            /* Names are internal static identifiers, never request text. */
++            fprintf(fp, "%s{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"pid\":%d,\"tid\":%llu,\"ts\":%.3f,\"dur\":%.3f,\"args\":{\"layer\":%u,\"position\":%u,\"bytes\":%llu,\"ok\":%s}}\n",
++                    written++ ? "," : "", r->name, r->gpu ? "gpu_stream" : "cpu",
++                    r->gpu ? 1 : 2, (unsigned long long)r->lane,
++                    r->start_us, r->end_us - r->start_us, r->layer, r->position,
++                    (unsigned long long)r->bytes, r->ok ? "true" : "false");
++        }
++        fprintf(fp, "],\"metadata\":{\"records\":%u,\"written\":%u,\"dropped\":%u,\"incomplete\":%u,\"errors\":%u,\"captured_tokens\":%u,\"skip\":%u,\"requested_tokens\":%u,\"setup_us\":%.3f,\"origin_enqueue_us\":%.3f,\"clock_alignment\":\"CPU and GPU have separate origins, approximately aligned at event enqueue; GPU intervals include submission gaps, not pure kernel busy time\"}}\n",
++                g_rocm_trace.count, written, g_rocm_trace.dropped, g_rocm_trace.incomplete,
++                g_rocm_trace.errors, g_rocm_trace.captured_tokens, g_rocm_trace.skip,
++                g_rocm_trace.tokens, g_rocm_trace.setup_us, g_rocm_trace.origin_enqueue_us);
++        if (ferror(fp)) fprintf(stderr, "ds4: ROCm trace write failed\n");
++        if (fclose(fp)) fprintf(stderr, "ds4: ROCm trace close failed\n");
++        fprintf(stderr, "ds4: ROCm trace records=%u written=%u dropped=%u incomplete=%u errors=%u\n",
++                g_rocm_trace.count, written, g_rocm_trace.dropped, g_rocm_trace.incomplete, g_rocm_trace.errors);
++    }
++    for (uint32_t i = 0; i < g_rocm_trace.created; i++) (void)cudaEventDestroy(g_rocm_trace.events[i]);
++    free(g_rocm_trace.events);
++    free(g_rocm_trace.records);
++    memset(&g_rocm_trace, 0, sizeof(g_rocm_trace));
++}
+diff --git 1/tests/rocm_trace_summary.py 2/tests/rocm_trace_summary.py
+new file mode 100644
+index 0000000..ac3089a
+--- /dev/null
++++ 2/tests/rocm_trace_summary.py
+@@ -0,0 +1,72 @@
++#!/usr/bin/env python3
++"""Validate a ROCm trace and summarize stream intervals, not kernel busy time."""
++from collections import defaultdict
++import json
++import math
++from pathlib import Path
++import sys
++
++
++def union_us(intervals):
++    total = 0.0
++    end = None
++    for start, stop in sorted(intervals):
++        if end is None or start > end:
++            total += stop - start
++            end = stop
++        elif stop > end:
++            total += stop - end
++            end = stop
++    return total
++
++
++def summarize(doc):
++    metadata, events = doc["metadata"], doc["traceEvents"]
++    if any(metadata[key] for key in ("errors", "incomplete", "dropped")):
++        raise ValueError("Trace has errors, unfinished events or exhausted storage")
++    if not events or metadata["captured_tokens"] != metadata["requested_tokens"]:
++        raise ValueError("Trace did not capture the requested decode window")
++    if metadata["records"] != len(events) or metadata["written"] != len(events):
++        raise ValueError("Trace lost records")
++    totals = defaultdict(float)
++    positions = set()
++    uploads = []
++    gpu_intervals = []
++    transfer_bytes = 0
++    for event in events:
++        start, duration = event["ts"], event["dur"]
++        if not math.isfinite(start) or not math.isfinite(duration) or duration < 0:
++            raise ValueError("Nonfinite or negative trace duration")
++        if not event["args"]["ok"]:
++            raise ValueError("Trace includes a failed operation")
++        category = event["cat"]
++        if category not in ("gpu_stream", "cpu") or event["ph"] != "X":
++            raise ValueError("Unexpected trace event type")
++        positions.add(event["args"]["position"])
++        totals[category + "/" + event["name"]] += duration
++        if category == "gpu_stream":
++            gpu_intervals.append((start, start + duration))
++            if event["name"] == "upload":
++                uploads.append((start, start + duration))
++                transfer_bytes += event["args"]["bytes"]
++    if len(positions) != metadata["captured_tokens"] or not gpu_intervals:
++        raise ValueError("Missing sampled positions or GPU events")
++    n = len(positions)
++    upload_union = union_us(uploads)
++    covered = union_us(gpu_intervals)
++    span = max(end for _, end in gpu_intervals) - min(start for start, _ in gpu_intervals)
++    return {
++        "captured_tokens": n,
++        "position_range": [min(positions), max(positions)],
++        "summed_interval_ms_per_token": dict(sorted(((key, value / n / 1000) for key, value in totals.items()), key=lambda item: -item[1])),
++        "upload_GiB_per_token": transfer_bytes / n / 2**30,
++        "upload_interval_union_ms_per_token": upload_union / n / 1000,
++        "upload_GiB_per_union_second": transfer_bytes / 2**30 / (upload_union / 1e6) if upload_union else None,
++        "uncovered_gpu_interval_ms_per_token": max(0, span - covered) / n / 1000,
++        "setup_ms": metadata["setup_us"] / 1000,
++        "limits": "CPU spans overlap GPU work and each other. GPU stream intervals include submission/queueing gaps; uncovered intervals may contain uninstrumented work. Neither is exact kernel busy/device idle time. CPU/GPU clock alignment is approximate.",
++    }
++
++
++if __name__ == "__main__":
++    print(json.dumps(summarize(json.loads(Path(sys.argv[1]).read_text())), indent=2))
+diff --git 1/tests/test_rocm_trace.c 2/tests/test_rocm_trace.c
+new file mode 100644
+index 0000000..be728f7
+--- /dev/null
++++ 2/tests/test_rocm_trace.c
+@@ -0,0 +1,132 @@
++/* Compile the actual trace implementation against non-synchronizing GPU mocks. */
++#include <assert.h>
++#include <math.h>
++#include <pthread.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#define DS4_ROCM_TRACE_CAP 64u
++#define cudaSuccess 0
++#define cudaErrorNotReady 1
++typedef int cudaError_t;
++typedef void *cudaStream_t;
++typedef struct fake_event { float milliseconds; } *cudaEvent_t;
++static unsigned creates, live_events, records;
++static int create_failure, record_failure, query_status, elapsed_failure;
++static float gpu_clock;
++
++static cudaError_t cudaEventCreate(cudaEvent_t *event) {
++    creates++;
++    if (create_failure && creates == 4) return 2;
++    *event = calloc(1, sizeof(**event));
++    assert(*event);
++    live_events++;
++    return 0;
++}
++static cudaError_t cudaEventDestroy(cudaEvent_t event) {
++    assert(event && live_events);
++    live_events--;
++    free(event);
++    return 0;
++}
++static cudaError_t cudaEventRecord(cudaEvent_t event, cudaStream_t stream) {
++    (void)stream;
++    records++;
++    if (record_failure && records == 3) return 2;
++    gpu_clock += 0.1f;
++    event->milliseconds = gpu_clock;
++    return 0;
++}
++static cudaError_t cudaEventQuery(cudaEvent_t event) {
++    assert(event);
++    return query_status;
++}
++static cudaError_t cudaEventElapsedTime(float *ms, cudaEvent_t a, cudaEvent_t b) {
++    assert(a && b);
++    if (elapsed_failure == 1) return 2;
++    *ms = elapsed_failure == 2 ? NAN : b->milliseconds - a->milliseconds;
++    return 0;
++}
++#include "../rocm/ds4_rocm_trace.cuh"
++
++static void *cpu_worker(void *arg) {
++    uint64_t lane = (uintptr_t)arg;
++    for (unsigned i = 0; i < 8; i++) {
++        uint32_t id = rocm_trace_cpu_begin("read", lane, 4096);
++        assert(id);
++        rocm_trace_cpu_end(id, 1);
++    }
++    return NULL;
++}
++
++int main(int argc, char **argv) {
++    assert(argc == 3);
++    const char *mode = argv[1], *path = argv[2];
++    unsetenv("DS4_ROCM_DECODE_TRACE");
++    unsetenv("DS4_ROCM_DECODE_TRACE_SKIP");
++    unsetenv("DS4_ROCM_DECODE_TRACE_TOKENS");
++    if (!strcmp(mode, "disabled")) {
++        ds4_rocm_trace_layer(0, 100);
++        ds4_rocm_trace_stage("q_path");
++        assert(!rocm_trace_cpu_begin("read", 1, 32));
++        assert(!rocm_trace_upload_begin((void *)1, 32));
++        rocm_trace_cpu_end(0, 1);
++        rocm_trace_upload_end(0, (void *)1, 1);
++        rocm_trace_finish();
++        assert(!creates && !records);
++        return 0;
++    }
++    setenv("DS4_ROCM_DECODE_TRACE", path, 1);
++    setenv("DS4_ROCM_DECODE_TRACE_SKIP", "1", 1);
++    setenv("DS4_ROCM_DECODE_TRACE_TOKENS", "2", 1);
++    if (!strcmp(mode, "invalid-window")) {
++        setenv("DS4_ROCM_DECODE_TRACE_TOKENS", "17", 1);
++        ds4_rocm_trace_layer(0, 100);
++        rocm_trace_finish();
++        assert(!creates && !records);
++        return 0;
++    }
++    if (!strcmp(mode, "existing-file")) {
++        FILE *fp = fopen(path, "wx"); assert(fp);
++        fputs("keep\n", fp); fclose(fp);
++        ds4_rocm_trace_layer(0, 100);
++        rocm_trace_finish();
++        assert(!creates && !records);
++        return 0;
++    }
++    create_failure = !strcmp(mode, "create-failure");
++    record_failure = !strcmp(mode, "record-failure");
++    query_status = !strcmp(mode, "not-ready") ? 1 : !strcmp(mode, "query-failure") ? 2 : 0;
++    elapsed_failure = !strcmp(mode, "elapsed-failure") ? 1 : !strcmp(mode, "nonfinite") ? 2 : 0;
++    ds4_rocm_trace_layer(0, 100);
++    ds4_rocm_trace_stage("unrecorded");
++    ds4_rocm_trace_layer(0, 101);
++    if (!strcmp(mode, "capacity")) {
++        for (unsigned i = 0; i < 100; i++) {
++            uint32_t id = rocm_trace_cpu_begin("read", 7, 64);
++            rocm_trace_cpu_end(id, 1);
++        }
++    } else if (!strcmp(mode, "threads")) {
++        pthread_t workers[4];
++        for (uintptr_t i = 0; i < 4; i++) assert(!pthread_create(&workers[i], NULL, cpu_worker, (void *)(i + 1)));
++        for (unsigned i = 0; i < 4; i++) assert(!pthread_join(workers[i], NULL));
++    } else {
++        ds4_rocm_trace_stage("q_path");
++        uint32_t read = rocm_trace_cpu_begin("read", 7, 64);
++        uint32_t upload = rocm_trace_upload_begin((void *)7, 64);
++        rocm_trace_upload_end(upload, (void *)7, strcmp(mode, "operation-failure") != 0);
++        if (strcmp(mode, "unclosed")) rocm_trace_cpu_end(read, 1);
++    }
++    ds4_rocm_trace_stage("ffn_hc_post");
++    assert(!rocm_trace_cpu_begin("outside-layer", 0, 0));
++    ds4_rocm_trace_layer(0, 102);
++    ds4_rocm_trace_stage("indexer_score");
++    ds4_rocm_trace_stage("indexer_topk");
++    ds4_rocm_trace_stage("ffn_hc_post");
++    ds4_rocm_trace_layer(0, 103);
++    ds4_rocm_trace_stage("outside-window");
++    rocm_trace_finish();
++    assert(live_events == 0);
++    return 0;
++}
+diff --git 1/tests/test_rocm_trace.py 2/tests/test_rocm_trace.py
+new file mode 100644
+index 0000000..18d5b04
+--- /dev/null
++++ 2/tests/test_rocm_trace.py
+@@ -0,0 +1,82 @@
++#!/usr/bin/env python3
++"""Test bounded trace collection without a ROCm installation or GPU."""
++import copy
++import json
++from pathlib import Path
++import re
++import subprocess
++import sys
++import tempfile
++sys.dont_write_bytecode = True
++from rocm_trace_summary import summarize, union_us
++
++root = Path(__file__).resolve().parents[1]
++out = Path(tempfile.mkdtemp(prefix="ds4-trace-unit-"))
++source = (root / "rocm/ds4_rocm_trace.cuh").read_text()
++# These APIs would turn a trace into a scheduling change.
++assert not re.search(r"\b(?:cuda|hip)(?:DeviceSynchronize|StreamSynchronize|EventSynchronize|StreamWaitEvent)\s*\(", source)
++subprocess.run(["cc", "-std=c99", "-D_POSIX_C_SOURCE=200809L", "-Wall", "-Wextra", "-Werror",
++                "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-g", "-pthread",
++                str(root / "tests/test_rocm_trace.c"), "-lm", "-o", str(out / "test")], check=True)
++for mode in ("disabled", "invalid-window", "existing-file", "success", "threads", "capacity",
++             "unclosed", "create-failure", "record-failure", "not-ready", "query-failure",
++             "elapsed-failure", "nonfinite", "operation-failure"):
++    path = out / (mode + ".json")
++    subprocess.run([str(out / "test"), mode, str(path)], check=True, timeout=30)
++    if mode in ("disabled", "invalid-window"):
++        assert not path.exists()
++        continue
++    if mode == "existing-file":
++        assert path.read_text() == "keep\n"
++        continue
++    doc = json.loads(path.read_text())
++    metadata, events = doc["metadata"], doc["traceEvents"]
++    assert len(events) == metadata["written"] <= metadata["records"] <= 64
++    assert all(event["name"] not in ("unrecorded", "outside-window", "outside-layer") for event in events)
++    assert all(event["dur"] >= 0 for event in events)
++    if mode in ("success", "threads"):
++        assert metadata["captured_tokens"] == 2
++        assert not any(metadata[key] for key in ("errors", "incomplete", "dropped"))
++        assert metadata["written"] == metadata["records"]
++        assert {event["args"]["position"] for event in events} == {101, 102}
++    if mode == "success":
++        assert {event["cat"] for event in events} == {"gpu_stream", "cpu"}
++        assert any(event["name"] == "upload" and event["tid"] == 7 for event in events)
++        good = copy.deepcopy(doc)
++        summary = summarize(doc)
++        assert summary["captured_tokens"] == 2
++        assert summary["upload_GiB_per_token"] == 32 / 2**30
++        assert "idle" in summary["limits"]
++    elif mode == "threads":
++        assert len([event for event in events if event["name"] == "read"]) == 32
++    elif mode == "capacity":
++        assert metadata["records"] == 64 and metadata["dropped"] > 0
++    elif mode in ("unclosed", "not-ready"):
++        assert metadata["incomplete"] > 0
++    elif mode in ("create-failure", "record-failure", "query-failure", "elapsed-failure", "nonfinite"):
++        assert metadata["errors"] > 0
++    elif mode == "operation-failure":
++        assert any(not event["args"]["ok"] for event in events)
++    print(mode, "PASS")
++assert union_us([]) == 0
++assert union_us([(0, 4), (1, 3), (3, 5), (8, 9)]) == 6
++for failure in ("errors", "incomplete", "dropped", "lost", "window", "nonfinite", "negative", "operation"):
++    doc = copy.deepcopy(good)
++    if failure in ("errors", "incomplete", "dropped"):
++        doc["metadata"][failure] = 1
++    elif failure == "lost":
++        doc["metadata"]["written"] -= 1
++    elif failure == "window":
++        doc["metadata"]["requested_tokens"] += 1
++    elif failure in ("nonfinite", "negative"):
++        doc["traceEvents"][0]["dur"] = float("nan") if failure == "nonfinite" else -1
++    else:
++        doc["traceEvents"][0]["args"]["ok"] = False
++    try:
++        summarize(doc)
++    except ValueError:
++        pass
++    else:
++        raise AssertionError(f"Summary accepted {failure}")
++print("Trace-summary acceptance and interval-union tests: PASS")
++print("Artifacts:", out)

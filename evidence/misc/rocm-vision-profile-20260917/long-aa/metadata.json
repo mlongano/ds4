@@ -1,0 +1,25 @@
+{
+  "options": {
+    "request": "/tmp/ds4-vision-profile-c229363/long-replay/request.json",
+    "reference": "/tmp/ds4-vision-profile-c229363/baseline/ds4-server",
+    "candidate": "/tmp/ds4-vision-profile-c229363/baseline/ds4-server",
+    "model": "/mnt/ram/ds4flash.gguf",
+    "vision": "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+    "steering_file": "dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "steering_scale": 3,
+    "candidate_env": [],
+    "reference_env": [],
+    "profile": false,
+    "tokens": 1024,
+    "seed": 123,
+    "repeats": 1,
+    "port": 18000,
+    "timeout": 3600.0,
+    "output": "/tmp/ds4-vision-profile-c229363/long-aa"
+  },
+  "page_size": 4096,
+  "binary_sha256": {
+    "reference": "8c5dd43f1b7400fe26f567d65225e40956df6af8a817ebcf6d77351e15fb6073",
+    "candidate": "8c5dd43f1b7400fe26f567d65225e40956df6af8a817ebcf6d77351e15fb6073"
+  }
+}

@@ -1,0 +1,48 @@
+ds4: Linux rocm backend set oom_score_adj=1000
+ds4: ROCm backend initialized on AMD Radeon AI PRO R9700 (sm_120)
+ds4: SSD streaming auto cache budget
+ds4:   rocm recommends 31.86 GiB working set
+ds4:   using 82% total for model + cached experts: 26.19 GiB
+ds4:   non-routed weights: 8.20 GiB
+ds4:   routed expert size: 6.75 MiB
+ds4:   expert budget before prefill reserve: 2730 (18.00 GiB)
+ds4: rocm SSD streaming cache target 18.00 GiB; effective 18.00 GiB = 3.38 GiB prefill headroom + 14.62 GiB dynamic cache (2218 experts, 6.75 MiB each)
+ds4: SSD streaming initial rocm model map restricted to token embedding (1 spans, 0.99 GiB tensor span)
+ds4: ROCm loading model tensors into device cache
+ds4: ROCm preparing model tensor mappings
+ds4: ROCm startup model preparation covered 0.99 GiB of tensor spans in 0.000s
+ds4: ROCm mapped 0.87 GiB auxiliary model
+ds4: rocm backend initialized for graph diagnostics
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB + resident model 2.81 GiB + expert cache 14.62 GiB + prefill expert reserve 3.38 GiB = 26.53 GiB planned
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB = 5.72 GiB context
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+ds4: accelerator using managed KV cache for ctx=262144 (kv cache 3.72 GiB, context buffers 5.72 GiB); this may degrade performance but is needed for very large contexts
+ds4: directional steering enabled: /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 attn=0 ffn=3
+ds4: image 512x507, 169 image tokens
+ds4: ROCm loading model tensors 4.69 GiB cached
+ds4: prefill: 21.60 t/s, generation: 11.42 t/s
+processing 19 input tokens: 0/19 (0.0%)
+ds4: ROCm trimmed 2 streaming expert slabs (1.68 GiB, 255 experts) for stream_span; free 2.04 -> 3.72 GiB, target 3.69 GiB
+ds4: ROCm loading model tensors 8.70 GiB cached
+ds4: ROCm trimmed 2 streaming expert slabs (1.99 GiB, 302 experts) for stream_span; free 2.04 -> 4.03 GiB, target 3.12 GiB
+ds4: ROCm releasing 0.02 GiB q8 fp16 cache for stream_span (allocation=1.69 GiB free=2.89 GiB reserve=2.00 GiB)
+ds4: ROCm trimmed 1 streaming expert slab (1.00 GiB, 151 experts) for stream_span; free 2.91 -> 3.90 GiB, target 3.69 GiB
+ds4: ROCm releasing 0.02 GiB q8 fp16 cache for stream_span (allocation=1.69 GiB free=2.20 GiB reserve=2.00 GiB)
+ds4: ROCm trimmed 2 streaming expert slabs (1.99 GiB, 302 experts) for stream_span; free 2.22 -> 4.21 GiB, target 3.69 GiB
+ds4: ROCm releasing 0.25 GiB q8 fp16 cache for stream_span (allocation=1.69 GiB free=3.64 GiB reserve=2.00 GiB)
+ds4: ROCm releasing 0.25 GiB q8 fp16 cache for stream_span (allocation=1.69 GiB free=3.64 GiB reserve=2.00 GiB)
+processing 19 input tokens: 19/19 (100.0%)
+ds4: ROCm loading model tensors 5.53 GiB cached
+ds4: prefill: 1.98 t/s, generation: 5.09 t/s
+ds4: image 1000x800, 320 image tokens
+processing 345 input tokens: 0/345 (0.0%)
+ds4: ROCm trimmed 2 streaming expert slabs (1.99 GiB, 302 experts) for stream_span; free 1.81 -> 3.80 GiB, target 3.69 GiB
+ds4: ROCm trimmed 2 streaming expert slabs (1.99 GiB, 302 experts) for stream_span; free 2.12 -> 4.11 GiB, target 3.12 GiB
+ds4: ROCm releasing 0.02 GiB q8 fp16 cache for stream_span (allocation=1.69 GiB free=2.93 GiB reserve=2.00 GiB)
+ds4: ROCm trimmed 1 streaming expert slab (1.00 GiB, 151 experts) for stream_span; free 2.94 -> 3.94 GiB, target 3.69 GiB
+ds4: ROCm releasing 0.02 GiB q8 fp16 cache for stream_span (allocation=1.69 GiB free=2.24 GiB reserve=2.00 GiB)
+ds4: ROCm trimmed 2 streaming expert slabs (1.99 GiB, 302 experts) for stream_span; free 2.25 -> 4.25 GiB, target 3.69 GiB
+ds4: ROCm loading model tensors 11.56 GiB cached
+processing 345 input tokens: 345/345 (100.0%)
+ds4: prefill: 35.44 t/s, generation: 8.66 t/s

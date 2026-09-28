@@ -1,0 +1,151 @@
+## lspci tree
+-+-[0000:00]-+-00.0  Intel Corporation Sky Lake-E DMI3 Registers
+ |           +-04.0  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.1  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.2  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.3  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.4  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.5  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.6  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-04.7  Intel Corporation Sky Lake-E CBDMA Registers
+ |           +-05.0  Intel Corporation Sky Lake-E MM/Vt-d Configuration Registers
+ |           +-05.2  Intel Corporation Sky Lake-E RAS
+ |           +-05.4  Intel Corporation Sky Lake-E IOAPIC
+ |           +-08.0  Intel Corporation Sky Lake-E Ubox Registers
+ |           +-08.1  Intel Corporation Sky Lake-E Ubox Registers
+ |           +-08.2  Intel Corporation Sky Lake-E Ubox Registers
+ |           +-14.0  Intel Corporation 200 Series/Z370 Chipset Family USB 3.0 xHCI Controller
+ |           +-14.2  Intel Corporation 200 Series/Z370 Chipset Family Thermal Subsystem
+ |           +-16.0  Intel Corporation 200 Series/Z370 Chipset Family MEI #1
+ |           +-17.0  Intel Corporation 200 Series/Z370 Chipset Family SATA Controller (AHCI)
+ |           +-1b.0-[01]--
+ |           +-1b.4-[02]----00.0  Micron/Crucial Technology P2 [Nick P2] / P3 / P3 Plus NVMe PCIe SSD (DRAM-less)
+ |           +-1c.0-[03]--
+ |           +-1c.2-[04]----00.0  Realtek Semiconductor Co., Ltd. RTL8822BE 802.11a/b/g/n/ac WiFi adapter
+ |           +-1c.4-[05]----00.0  ASMedia Technology Inc. ASM2142/ASM3142 USB 3.1 Host Controller
+ |           +-1c.6-[06]----00.0  ASMedia Technology Inc. ASM2142/ASM3142 USB 3.1 Host Controller
+ |           +-1d.0-[07]----00.0  Sandisk Corp WD_BLACK SN7100/WD PC SN7100S M.2 2280 NVMe SSD (DRAM-less)
+ |           +-1f.0  Intel Corporation X299 Chipset LPC/eSPI Controller
+ |           +-1f.2  Intel Corporation 200 Series/Z370 Chipset Family PMC
+ |           +-1f.3  Intel Corporation 200 Series/Z370 Chipset Family HD Audio
+ |           +-1f.4  Intel Corporation 200 Series/Z370 Chipset Family SMBus
+ |           \-1f.6  Intel Corporation Ethernet Connection (2) I219-V
+ +-[0000:16]-+-00.0-[17]--+-00.0  NVIDIA Corporation GP106 [GeForce GTX 1060 6GB]
+ |           |            \-00.1  NVIDIA Corporation GP106 High Definition Audio Controller
+ |           +-05.0  Intel Corporation Sky Lake-E VT-d
+ |           +-05.2  Intel Corporation Sky Lake-E RAS Configuration Registers
+ |           +-05.4  Intel Corporation Sky Lake-E IOxAPIC Configuration Registers
+ |           +-08.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.2  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.3  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.4  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.5  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.6  Intel Corporation Sky Lake-E CHA Registers
+ |           +-08.7  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.2  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.3  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.4  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.5  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.6  Intel Corporation Sky Lake-E CHA Registers
+ |           +-09.7  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0a.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0a.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.2  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.3  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.4  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.5  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.6  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0e.7  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.2  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.3  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.4  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.5  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.6  Intel Corporation Sky Lake-E CHA Registers
+ |           +-0f.7  Intel Corporation Sky Lake-E CHA Registers
+ |           +-10.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-10.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-1d.0  Intel Corporation Sky Lake-E CHA Registers
+ |           +-1d.1  Intel Corporation Sky Lake-E CHA Registers
+ |           +-1d.2  Intel Corporation Sky Lake-E CHA Registers
+ |           +-1d.3  Intel Corporation Sky Lake-E CHA Registers
+ |           +-1e.0  Intel Corporation Sky Lake-E PCU Registers
+ |           +-1e.1  Intel Corporation Sky Lake-E PCU Registers
+ |           +-1e.2  Intel Corporation Sky Lake-E PCU Registers
+ |           +-1e.3  Intel Corporation Sky Lake-E PCU Registers
+ |           +-1e.4  Intel Corporation Sky Lake-E PCU Registers
+ |           +-1e.5  Intel Corporation Sky Lake-E PCU Registers
+ |           \-1e.6  Intel Corporation Sky Lake-E PCU Registers
+ +-[0000:64]-+-00.0-[65-67]----00.0-[66-67]----00.0-[67]--+-00.0  Advanced Micro Devices, Inc. [AMD/ATI] Navi 48 [Radeon AI PRO R9700]
+ |           |                                            \-00.1  Advanced Micro Devices, Inc. [AMD/ATI] Navi 48 HDMI/DP Audio Controller
+ |           +-05.0  Intel Corporation Sky Lake-E VT-d
+ |           +-05.2  Intel Corporation Sky Lake-E RAS Configuration Registers
+ |           +-05.4  Intel Corporation Sky Lake-E IOxAPIC Configuration Registers
+ |           +-08.0  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-09.0  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0a.0  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0a.1  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0a.2  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0a.3  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0a.4  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0a.5  Intel Corporation Sky Lake-E LM Channel 1
+ |           +-0a.6  Intel Corporation Sky Lake-E LMS Channel 1
+ |           +-0a.7  Intel Corporation Sky Lake-E LMDP Channel 1
+ |           +-0b.0  Intel Corporation Sky Lake-E DECS Channel 2
+ |           +-0b.1  Intel Corporation Sky Lake-E LM Channel 2
+ |           +-0b.2  Intel Corporation Sky Lake-E LMS Channel 2
+ |           +-0b.3  Intel Corporation Sky Lake-E LMDP Channel 2
+ |           +-0c.0  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0c.1  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0c.2  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0c.3  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0c.4  Intel Corporation Sky Lake-E Integrated Memory Controller
+ |           +-0c.5  Intel Corporation Sky Lake-E LM Channel 1
+ |           +-0c.6  Intel Corporation Sky Lake-E LMS Channel 1
+ |           +-0c.7  Intel Corporation Sky Lake-E LMDP Channel 1
+ |           +-0d.0  Intel Corporation Sky Lake-E DECS Channel 2
+ |           +-0d.1  Intel Corporation Sky Lake-E LM Channel 2
+ |           +-0d.2  Intel Corporation Sky Lake-E LMS Channel 2
+ |           \-0d.3  Intel Corporation Sky Lake-E LMDP Channel 2
+ \-[0000:b2]-+-05.0  Intel Corporation Sky Lake-E VT-d
+             +-05.2  Intel Corporation Sky Lake-E RAS Configuration Registers
+             +-05.4  Intel Corporation Sky Lake-E IOxAPIC Configuration Registers
+             +-12.0  Intel Corporation Sky Lake-E M3KTI Registers
+             +-12.1  Intel Corporation Sky Lake-E M3KTI Registers
+             +-12.2  Intel Corporation Sky Lake-E M3KTI Registers
+             +-15.0  Intel Corporation Sky Lake-E M2PCI Registers
+             +-16.0  Intel Corporation Sky Lake-E M2PCI Registers
+             +-16.4  Intel Corporation Sky Lake-E M2PCI Registers
+             \-17.0  Intel Corporation Sky Lake-E M2PCI Registers
+## display controllers
+0000:17:00.0 VGA compatible controller [0300]: NVIDIA Corporation GP106 [GeForce GTX 1060 6GB] [10de:1c03] (rev a1)
+0000:67:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 48 [Radeon AI PRO R9700] [1002:7551] (rev c0)
+## GPU verbose
+0000:67:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 48 [Radeon AI PRO R9700] (rev c0) (prog-if 00 [VGA controller])
+	Subsystem: ASUSTeK Computer Inc. Device 0626
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 32 bytes
+	Interrupts: pin B disabled, MSI(X) routed to IRQ 107
+	NUMA node: 0
+	IOMMU group: 3
+	Region 0: Memory at c0000000 (64-bit, prefetchable) [size=256M]
+	Region 2: Memory at d0000000 (64-bit, prefetchable) [size=2M]
+	Region 4: I/O ports at b000 [size=256]
+	Region 5: Memory at d8d00000 (32-bit, non-prefetchable) [size=512K]
+	Expansion ROM at 000c0000 [disabled] [size=128K]
+	Capabilities: <access denied>
+	Kernel driver in use: amdgpu
+	Kernel modules: amdgpu
+
+0000:67:00.0 current=32.0 GT/s PCIe x16 max=32.0 GT/s PCIe x16
+0000:66:00.0 current=32.0 GT/s PCIe x16 max=32.0 GT/s PCIe x16
+0000:65:00.0 current=8.0 GT/s PCIe x16 max=32.0 GT/s PCIe x16
+0000:64:00.0 current=8.0 GT/s PCIe x16 max=8.0 GT/s PCIe x16
+pci0000:64 current= x max= x

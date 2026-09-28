@@ -1,0 +1,5 @@
+started_utc=2026-09-19T20:34:25Z
+0-reference 7.82 7.9156744983624145
+0-candidate 7.88 7.965976936288542
+Exact generated-field comparisons passed. Results: misc/rocm-prefetch-20260919/fixed-long-exact
+exit=0 ended_utc=2026-09-19T20:58:43Z

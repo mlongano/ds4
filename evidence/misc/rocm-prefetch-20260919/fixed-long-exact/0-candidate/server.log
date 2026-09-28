@@ -1,0 +1,122 @@
+ds4: Linux rocm backend set oom_score_adj=1000
+ds4: ROCm backend initialized on AMD Radeon AI PRO R9700 (sm_120)
+ds4: rocm SSD streaming cache target 18.00 GiB; effective 18.00 GiB = 3.38 GiB prefill headroom + 14.62 GiB dynamic cache (2218 experts, 6.75 MiB each)
+ds4: SSD streaming initial rocm model map restricted to token embedding (1 spans, 0.99 GiB tensor span)
+ds4: ROCm loading model tensors into device cache
+ds4: ROCm preparing model tensor mappings
+ds4: ROCm startup model preparation covered 0.99 GiB of tensor spans in 0.000s
+ds4: ROCm mapped 0.87 GiB auxiliary model
+ds4: rocm backend initialized for graph diagnostics
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB + resident model 2.81 GiB + expert cache 14.62 GiB + prefill expert reserve 3.38 GiB = 26.53 GiB planned
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+0919 22:46:37 ds4-server: context buffers 5855.75 MiB (ctx=262144, backend=rocm, prefill_chunk=4096, raw_kv_rows=4352, compressed_kv_rows=65538)
+ds4: accelerator using managed KV cache for ctx=262144 (kv cache 3.72 GiB, context buffers 5.72 GiB); this may degrade performance but is needed for very large contexts
+ds4: directional steering enabled: /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 attn=0 ffn=3
+0919 22:46:39 ds4-server: listening on http://127.0.0.1:18000
+0919 22:46:39 ds4-server: chat ctx=0..87441:87441 TOOLS prompt start
+0919 22:46:39 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 0/87441 (0.0%) chunk=0.00 t/s avg=0.00 t/s 0.001s
+ds4: ROCm loading model tensors 0.50 GiB cached
+ds4: ROCm loading model tensors 7.37 GiB cached
+0919 22:47:03 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 4096/87441 (4.7%) chunk=167.55 t/s avg=167.55 t/s 24.447s
+ds4: ROCm loading model tensors 0.50 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+0919 22:47:27 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 8192/87441 (9.4%) chunk=174.05 t/s avg=170.74 t/s 47.980s
+ds4: ROCm loading model tensors 4.32 GiB cached
+ds4: ROCm loading model tensors 9.06 GiB cached
+ds4: ROCm loading model tensors 13.39 GiB cached
+0919 22:47:51 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 12288/87441 (14.1%) chunk=171.45 t/s avg=170.97 t/s 71.870s
+ds4: ROCm loading model tensors 11.56 GiB cached
+ds4: ROCm loading model tensors 0.50 GiB cached
+0919 22:48:15 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 16384/87441 (18.7%) chunk=168.41 t/s avg=170.33 t/s 96.192s
+ds4: ROCm loading model tensors 14.02 GiB cached
+ds4: ROCm loading model tensors 2.33 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+0919 22:48:40 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 20480/87441 (23.4%) chunk=166.57 t/s avg=169.56 t/s 120.782s
+ds4: ROCm loading model tensors 2.33 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+0919 22:49:05 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 24576/87441 (28.1%) chunk=164.23 t/s avg=168.65 t/s 145.723s
+ds4: ROCm loading model tensors 2.33 GiB cached
+ds4: ROCm loading model tensors 5.37 GiB cached
+ds4: ROCm loading model tensors 0.00 GiB cached
+0919 22:49:30 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 28672/87441 (32.8%) chunk=162.39 t/s avg=167.72 t/s 170.947s
+ds4: ROCm loading model tensors 4.19 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+0919 22:49:56 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 32768/87441 (37.5%) chunk=159.34 t/s avg=166.63 t/s 196.653s
+ds4: ROCm loading model tensors 2.33 GiB cached
+ds4: ROCm loading model tensors 4.19 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+0919 22:50:22 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 36864/87441 (42.2%) chunk=155.71 t/s avg=165.34 t/s 222.958s
+ds4: ROCm loading model tensors 0.50 GiB cached
+ds4: ROCm loading model tensors 1.69 GiB cached
+0919 22:50:49 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 40960/87441 (46.8%) chunk=153.54 t/s avg=164.08 t/s 249.635s
+ds4: ROCm loading model tensors 12.19 GiB cached
+ds4: ROCm loading model tensors 11.56 GiB cached
+ds4: ROCm loading model tensors 11.56 GiB cached
+0919 22:51:16 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 45056/87441 (51.5%) chunk=150.21 t/s avg=162.71 t/s 276.904s
+ds4: ROCm loading model tensors 6.02 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+ds4: ROCm loading model tensors 6.02 GiB cached
+0919 22:51:43 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 49152/87441 (56.2%) chunk=148.94 t/s avg=161.47 t/s 304.405s
+ds4: ROCm loading model tensors 0.50 GiB cached
+ds4: ROCm loading model tensors 0.50 GiB cached
+0919 22:52:11 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 53248/87441 (60.9%) chunk=147.16 t/s avg=160.27 t/s 332.239s
+ds4: ROCm loading model tensors 10.34 GiB cached
+ds4: ROCm loading model tensors 9.20 GiB cached
+ds4: ROCm loading model tensors 7.87 GiB cached
+0919 22:52:40 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 57344/87441 (65.6%) chunk=144.44 t/s avg=159.03 t/s 360.596s
+ds4: ROCm loading model tensors 0.50 GiB cached
+ds4: ROCm loading model tensors 14.39 GiB cached
+ds4: ROCm loading model tensors 11.56 GiB cached
+0919 22:53:09 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 61440/87441 (70.3%) chunk=141.06 t/s avg=157.69 t/s 389.634s
+ds4: ROCm loading model tensors 4.19 GiB cached
+ds4: ROCm loading model tensors 2.33 GiB cached
+ds4: ROCm loading model tensors 0.50 GiB cached
+0919 22:53:38 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 65536/87441 (74.9%) chunk=138.65 t/s avg=156.35 t/s 419.176s
+ds4: ROCm loading model tensors 7.87 GiB cached
+ds4: ROCm loading model tensors 5.37 GiB cached
+ds4: ROCm loading model tensors 2.33 GiB cached
+0919 22:54:09 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 69632/87441 (79.6%) chunk=134.88 t/s avg=154.90 t/s 449.543s
+ds4: ROCm loading model tensors 8.37 GiB cached
+ds4: ROCm loading model tensors 5.19 GiB cached
+ds4: ROCm loading model tensors 1.50 GiB cached
+0919 22:54:39 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 73728/87441 (84.3%) chunk=134.13 t/s avg=153.57 t/s 480.081s
+ds4: ROCm loading model tensors 7.87 GiB cached
+ds4: ROCm loading model tensors 4.19 GiB cached
+ds4: ROCm loading model tensors 0.50 GiB cached
+0919 22:55:10 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 77824/87441 (89.0%) chunk=132.17 t/s avg=152.28 t/s 511.070s
+ds4: ROCm loading model tensors 6.52 GiB cached
+ds4: ROCm loading model tensors 1.83 GiB cached
+ds4: ROCm loading model tensors 11.56 GiB cached
+0919 22:55:42 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 81920/87441 (93.7%) chunk=128.50 t/s avg=150.88 t/s 542.947s
+ds4: ROCm loading model tensors 2.33 GiB cached
+ds4: ROCm loading model tensors 13.39 GiB cached
+ds4: ROCm loading model tensors 9.70 GiB cached
+0919 22:56:14 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 86016/87441 (98.4%) chunk=129.12 t/s avg=149.68 t/s 574.668s
+ds4: ROCm loading model tensors 9.70 GiB cached
+ds4: ROCm loading model tensors 11.56 GiB cached
+0919 22:56:31 ds4-server: chat ctx=0..87441:87441 TOOLS prefill chunk 87441/87441 (100.0%) chunk=82.51 t/s avg=147.72 t/s 591.938s
+0919 22:56:31 ds4-server: chat ctx=0..87441:87441 TOOLS prompt done 591.938s
+0919 22:56:39 ds4-server: chat ctx=87441..87491:50 gen=50 TOOLS THINKING decoding chunk=6.50 t/s avg=6.50 t/s 7.693s
+0919 22:56:45 ds4-server: chat ctx=87491..87541:50 gen=100 TOOLS THINKING decoding chunk=7.95 t/s avg=7.15 t/s 13.982s
+0919 22:56:51 ds4-server: chat ctx=87541..87591:50 gen=150 TOOLS THINKING decoding chunk=8.15 t/s avg=7.46 t/s 20.115s
+0919 22:56:57 ds4-server: chat ctx=87591..87641:50 gen=200 TOOLS THINKING decoding chunk=7.94 t/s avg=7.57 t/s 26.412s
+0919 22:57:03 ds4-server: chat ctx=87641..87691:50 gen=250 TOOLS THINKING decoding chunk=8.30 t/s avg=7.71 t/s 32.437s
+0919 22:57:09 ds4-server: chat ctx=87691..87741:50 gen=300 TOOLS THINKING decoding chunk=8.53 t/s avg=7.83 t/s 38.297s
+0919 22:57:15 ds4-server: chat ctx=87741..87791:50 gen=350 TOOLS THINKING decoding chunk=8.92 t/s avg=7.97 t/s 43.902s
+0919 22:57:21 ds4-server: chat ctx=87791..87841:50 gen=400 TOOLS THINKING decoding chunk=8.49 t/s avg=8.03 t/s 49.788s
+0919 22:57:27 ds4-server: chat ctx=87841..87891:50 gen=450 TOOLS THINKING decoding chunk=7.93 t/s avg=8.02 t/s 56.097s
+0919 22:57:33 ds4-server: chat ctx=87891..87941:50 gen=500 TOOLS THINKING decoding chunk=8.03 t/s avg=8.02 t/s 62.320s
+0919 22:57:39 ds4-server: chat ctx=87941..87991:50 gen=550 TOOLS THINKING decoding chunk=8.14 t/s avg=8.03 t/s 68.465s
+0919 22:57:46 ds4-server: chat ctx=87991..88041:50 gen=600 TOOLS THINKING decoding chunk=7.50 t/s avg=7.99 t/s 75.132s
+0919 22:57:52 ds4-server: chat ctx=88041..88091:50 gen=650 TOOLS THINKING decoding chunk=7.80 t/s avg=7.97 t/s 81.546s
+0919 22:57:59 ds4-server: chat ctx=88091..88141:50 gen=700 TOOLS THINKING decoding chunk=7.66 t/s avg=7.95 t/s 88.075s
+0919 22:58:05 ds4-server: chat ctx=88141..88191:50 gen=750 TOOLS THINKING decoding chunk=8.16 t/s avg=7.96 t/s 94.199s
+0919 22:58:12 ds4-server: chat ctx=88191..88241:50 gen=800 TOOLS THINKING decoding chunk=7.61 t/s avg=7.94 t/s 100.766s
+0919 22:58:18 ds4-server: chat ctx=88241..88291:50 gen=850 TOOLS THINKING decoding chunk=7.72 t/s avg=7.93 t/s 107.246s
+0919 22:58:25 ds4-server: chat ctx=88291..88341:50 gen=900 TOOLS THINKING decoding chunk=7.79 t/s avg=7.92 t/s 113.665s
+0919 22:58:31 ds4-server: chat ctx=88341..88391:50 gen=950 TOOLS THINKING decoding chunk=8.11 t/s avg=7.93 t/s 119.831s
+0919 22:58:38 ds4-server: chat ctx=88391..88441:50 gen=1000 TOOLS THINKING decoding chunk=7.35 t/s avg=7.90 t/s 126.635s
+0919 22:58:41 ds4-server: chat ctx=88441..88465:24 gen=1024 TOOLS THINKING decoding chunk=7.21 t/s avg=7.88 t/s 129.963s
+ds4-server: thinking not closed, ignoring incomplete DSML in reasoning
+0919 22:58:41 ds4-server: chat ctx=0..87441:87441 gen=1024 TOOLS THINKING finish=length 721.902s
+0919 22:58:41 ds4-server: shutdown requested, draining requests

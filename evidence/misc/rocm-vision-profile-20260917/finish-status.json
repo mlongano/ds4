@@ -1,0 +1,6 @@
+{
+  "model_process_running": false,
+  "ram_model_size": 86720111776,
+  "services": "Id=ds4-server.service\nActiveState=failed\nMainPID=0\n\nId=pi-llama-router.service\nActiveState=inactive\nMainPID=0\n",
+  "holder_released": true
+}

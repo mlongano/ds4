@@ -1,0 +1,19 @@
+{
+  "reference": {
+    "generation_tps": 9.54,
+    "post_first_interval_tps": 9.741869622283799,
+    "first_output_seconds": 14.893381617999694
+  },
+  "candidate": {
+    "generation_tps": 8.44,
+    "post_first_interval_tps": 8.699049355384817,
+    "first_output_seconds": 19.824510036998618
+  },
+  "steady_percent_change": -10.704518817554366,
+  "overall_percent_change": -11.530398322851154,
+  "system_vmstat_total": {
+    "pswpin": 124,
+    "pswpout": 52188,
+    "pgmajfault": 130
+  }
+}

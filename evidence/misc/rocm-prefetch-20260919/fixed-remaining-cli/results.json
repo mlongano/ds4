@@ -1,0 +1,312 @@
+[
+  {
+    "name": "code-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-system-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128",
+      "--dump-logprobs",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/code-reference.json",
+      "--logprobs-top-k",
+      "20",
+      "--prompt-file",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/code.txt"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": null,
+    "ds4_environment": {},
+    "wall_seconds": 25.231873076001648,
+    "system_vmstat_delta": {
+      "pswpin": 219,
+      "pswpout": 219,
+      "pgmajfault": 492
+    }
+  },
+  {
+    "name": "code-candidate",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128",
+      "--dump-logprobs",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/code-candidate.json",
+      "--logprobs-top-k",
+      "20",
+      "--prompt-file",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/code.txt"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": null,
+    "ds4_environment": {},
+    "wall_seconds": 25.7270352949854,
+    "system_vmstat_delta": {
+      "pswpin": 132,
+      "pswpout": 0,
+      "pgmajfault": 164
+    }
+  },
+  {
+    "name": "database-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-system-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128",
+      "--dump-logprobs",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/database-reference.json",
+      "--logprobs-top-k",
+      "20",
+      "--prompt-file",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/database.txt"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": null,
+    "ds4_environment": {},
+    "wall_seconds": 26.227351198001998,
+    "system_vmstat_delta": {
+      "pswpin": 13742,
+      "pswpout": 0,
+      "pgmajfault": 12577
+    }
+  },
+  {
+    "name": "database-candidate",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128",
+      "--dump-logprobs",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/database-candidate.json",
+      "--logprobs-top-k",
+      "20",
+      "--prompt-file",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/database.txt"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": null,
+    "ds4_environment": {},
+    "wall_seconds": 26.07625461599673,
+    "system_vmstat_delta": {
+      "pswpin": 2215,
+      "pswpout": 0,
+      "pgmajfault": 2205
+    }
+  },
+  {
+    "name": "long-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-system-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128",
+      "--dump-logprobs",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/long-reference.json",
+      "--logprobs-top-k",
+      "20",
+      "--prompt-file",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/long.txt"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": null,
+    "ds4_environment": {},
+    "wall_seconds": 97.21317017800175,
+    "system_vmstat_delta": {
+      "pswpin": 924,
+      "pswpout": 0,
+      "pgmajfault": 1082
+    }
+  },
+  {
+    "name": "long-candidate",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128",
+      "--dump-logprobs",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/long-candidate.json",
+      "--logprobs-top-k",
+      "20",
+      "--prompt-file",
+      "misc/rocm-prefetch-20260919/fixed-remaining-cli/long.txt"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": null,
+    "ds4_environment": {},
+    "wall_seconds": 97.43779635999817,
+    "system_vmstat_delta": {
+      "pswpin": 39168,
+      "pswpout": 0,
+      "pgmajfault": 41645
+    }
+  },
+  {
+    "name": "two-turn-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-system-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": "Explain binary search in three sentences.\nOra mostra una funzione Python che lo implementa e spiega un caso limite.\n/quit\n",
+    "ds4_environment": {},
+    "wall_seconds": 35.45187576601165,
+    "system_vmstat_delta": {
+      "pswpin": 5120,
+      "pswpout": 0,
+      "pgmajfault": 7049
+    }
+  },
+  {
+    "name": "two-turn-candidate",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": "Explain binary search in three sentences.\nOra mostra una funzione Python che lo implementa e spiega un caso limite.\n/quit\n",
+    "ds4_environment": {},
+    "wall_seconds": 35.50890862799133,
+    "system_vmstat_delta": {
+      "pswpin": 11760,
+      "pswpout": 0,
+      "pgmajfault": 11963
+    }
+  },
+  {
+    "name": "image-reference",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-system-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--vision",
+      "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": "/read /media/NVME_DATA/MOUNTS/Models/ds4/tests/vision-fixtures/glm53/earth.jpg\n/quit\n",
+    "ds4_environment": {},
+    "wall_seconds": 25.530868251022184,
+    "system_vmstat_delta": {
+      "pswpin": 138,
+      "pswpout": 0,
+      "pgmajfault": 154
+    }
+  },
+  {
+    "name": "image-candidate",
+    "args": [
+      "/media/NVME_DATA/MOUNTS/Models/ds4/misc/rocm-prefetch-20260919/run-ds4-fixed-steered.sh",
+      "-m",
+      "/mnt/ram/ds4flash.gguf",
+      "--ssd-streaming",
+      "--ssd-streaming-cold",
+      "--vision",
+      "gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf",
+      "--ctx",
+      "262144",
+      "--nothink",
+      "--temp",
+      "0",
+      "-n",
+      "128"
+    ],
+    "returncode": 0,
+    "timed_out": false,
+    "input_text": "/read /media/NVME_DATA/MOUNTS/Models/ds4/tests/vision-fixtures/glm53/earth.jpg\n/quit\n",
+    "ds4_environment": {},
+    "wall_seconds": 25.482246983010555,
+    "system_vmstat_delta": {
+      "pswpin": 119,
+      "pswpout": 0,
+      "pgmajfault": 125
+    }
+  }
+]

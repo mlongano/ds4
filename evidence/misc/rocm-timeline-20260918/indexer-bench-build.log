@@ -1,0 +1,3 @@
+/opt/rocm/bin/hipcc -O3 -ffast-math -g -fno-finite-math-only -pthread -D__HIP_PLATFORM_AMD__ -Wno-unused-command-line-argument --offload-arch=gfx1201 -DDS4_ROCM_NO_WMMA -o tests/bench_indexer_score_rocm tests/bench_indexer_score_rocm.cu
+/opt/rocm/bin/hipcc -O3 -ffast-math -g -fno-finite-math-only -pthread -D__HIP_PLATFORM_AMD__ -Wno-unused-command-line-argument --offload-arch=gfx1201 -DDS4_ROCM_NO_WMMA -o tests/bench_indexer_score_rocm tests/bench_indexer_score_rocm.cu
+/opt/rocm/bin/hipcc -O3 -ffast-math -g -fno-finite-math-only -pthread -D__HIP_PLATFORM_AMD__ -Wno-unused-command-line-argument --offload-arch=gfx1201 -DDS4_ROCM_NO_WMMA -o tests/bench_indexer_score_rocm tests/bench_indexer_score_rocm.cu
