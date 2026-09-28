@@ -2,7 +2,7 @@ import copy
 import sys
 import unittest
 sys.dont_write_bytecode = True
-from rocm_server_regression import generation_metrics, summarize_events
+from rocm_server_regression import generation_metrics, sample_environment, summarize_events
 
 
 def fixture():
@@ -55,6 +55,38 @@ class ServerReplayTests(unittest.TestCase):
         self.assertEqual(summarize_events(a)[0], summarize_events(b)[0])
         b[2]["data"]["choices"][0]["delta"]["tool_calls"][0]["function"]["arguments"] = "[]"
         self.assertNotEqual(summarize_events(a)[0], summarize_events(b)[0])
+
+    def test_environment_removes_inherited_tuning_without_mutation(self):
+        inherited = {"DS4_OLD_TUNING": "1", "LD_LIBRARY_PATH": "/example",
+                     "PATH": "/bin", "HSA_ENABLE_SDMA": "0"}
+        before = inherited.copy()
+        env = sample_environment([], inherited)
+        self.assertNotIn("DS4_OLD_TUNING", env)
+        self.assertEqual(env["DS4_ROCM_STREAM_FREE_RESERVE_GB"], "2")
+        self.assertEqual(env["LD_LIBRARY_PATH"], "/opt/rocm/lib:/example")
+        self.assertEqual(env["HSA_ENABLE_SDMA"], "0")
+        self.assertEqual(inherited, before)
+
+    def test_sdma_overrides_are_independent_between_samples(self):
+        inherited = {"HSA_ENABLE_SDMA": "0"}
+        reference = sample_environment(["HSA_ENABLE_SDMA=1"], inherited)
+        candidate = sample_environment(["HSA_ENABLE_SDMA=0"], inherited)
+        self.assertEqual(reference["HSA_ENABLE_SDMA"], "1")
+        self.assertEqual(candidate["HSA_ENABLE_SDMA"], "0")
+        self.assertNotIn("HSA_ENABLE_SDMA", sample_environment([], {}))
+
+    def test_profile_and_explicit_ds4_overrides(self):
+        env = sample_environment(["DS4_ROCM_STREAM_FREE_RESERVE_GB=3"], {}, True)
+        self.assertEqual(env["DS4_ROCM_STREAM_FREE_RESERVE_GB"], "3")
+        self.assertEqual(env["DS4_SERVER_DECODE_PROFILE"], "1")
+        self.assertEqual(env["DS4_ROCM_STREAM_READ_PROFILE"], "1")
+        self.assertNotIn("DS4_SERVER_DECODE_PROFILE", sample_environment([], {}))
+
+    def test_environment_rejects_unrelated_or_invalid_overrides(self):
+        for item in ("LD_PRELOAD=library.so", "PATH=/tmp", "DS4_MISSING_VALUE",
+                     "HSA_ENABLE_SDMA=", "HSA_ENABLE_SDMA=2", "HSA_ENABLE_SDMA=no"):
+            with self.subTest(item=item), self.assertRaises(ValueError):
+                sample_environment([item], {})
 
     def test_generation_metrics_exclude_first_interval(self):
         log = ("gen=50 TOOLS THINKING decoding chunk=5.00 t/s avg=5.00 t/s 10.000s\n"

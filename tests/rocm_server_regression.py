@@ -71,6 +71,23 @@ def generation_metrics(log, tokens):
     return result
 
 
+def sample_environment(overrides, inherited, profile=False):
+    env = {k: v for k, v in inherited.items() if not k.startswith("DS4_")}
+    env.update(LD_LIBRARY_PATH="/opt/rocm/lib:" + env.get("LD_LIBRARY_PATH", ""),
+               DS4_ROCM_STREAM_FREE_RESERVE_GB="2", DS4_SSD_AUTO_CACHE_PCT="65")
+    if profile:
+        env.update(DS4_SERVER_DECODE_PROFILE="1", DS4_ROCM_STREAM_CACHE_STATS="1",
+                   DS4_ROCM_STREAM_READ_PROFILE="1")
+    for item in overrides:
+        key, sep, value = item.partition("=")
+        if not sep or not (key.startswith("DS4_") or key == "HSA_ENABLE_SDMA"):
+            raise ValueError("Environment overrides require DS4_NAME=value or HSA_ENABLE_SDMA=0/1")
+        if key == "HSA_ENABLE_SDMA" and value not in ("0", "1"):
+            raise ValueError("HSA_ENABLE_SDMA must be 0 or 1")
+        env[key] = value
+    return env
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--request", required=True)
@@ -92,6 +109,11 @@ def main():
     a = p.parse_args()
     if a.tokens < 1 or a.repeats < 1 or a.seed <= 0 or a.timeout <= 0:
         p.error("Tokens, repeats, seed and timeout must be positive")
+    try:
+        envs = {kind: sample_environment(getattr(a, kind + "_env"), os.environ, a.profile)
+                for kind in ("reference", "candidate")}
+    except ValueError as exc:
+        p.error(str(exc))
     payload = json.loads(Path(a.request).read_text())
     payload.update(stream=True, stream_options={"include_usage": True},
                    seed=a.seed, max_tokens=a.tokens)
@@ -115,17 +137,7 @@ def main():
             with socket.socket() as probe:
                 probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 probe.bind(("127.0.0.1", a.port))
-            env = {k: v for k, v in os.environ.items() if not k.startswith("DS4_")}
-            env.update(LD_LIBRARY_PATH="/opt/rocm/lib:" + env.get("LD_LIBRARY_PATH", ""),
-                       DS4_ROCM_STREAM_FREE_RESERVE_GB="2", DS4_SSD_AUTO_CACHE_PCT="65")
-            if a.profile:
-                env.update(DS4_SERVER_DECODE_PROFILE="1", DS4_ROCM_STREAM_CACHE_STATS="1",
-                           DS4_ROCM_STREAM_READ_PROFILE="1")
-            for item in getattr(a, kind + "_env"):
-                key, sep, value = item.partition("=")
-                if not sep or not key.startswith("DS4_"):
-                    p.error("Environment overrides require DS4_NAME=value")
-                env[key] = value
+            env = envs[kind]
             args = [binaries[kind], "-m", str(Path(a.model).resolve()), "--ctx", "262144",
                     "--host", "127.0.0.1", "--port", str(a.port), "--ssd-streaming",
                     "--ssd-streaming-cold", "--ssd-streaming-cache-experts", "18GB"]
@@ -136,7 +148,8 @@ def main():
                          "--dir-steering-ffn", str(a.steering_scale)]
             before, started = vmstat(), time.monotonic()
             record = {"name": work.name, "args": args,
-                      "ds4_environment": {k: v for k, v in env.items() if k.startswith("DS4_")}}
+                      "ds4_environment": {k: v for k, v in env.items() if k.startswith("DS4_")},
+                      "hsa_environment": {k: env[k] for k in ("HSA_ENABLE_SDMA",) if k in env}}
             events, error, conn = [], None, None
             with (work / "server.log").open("wb") as log:
                 proc = subprocess.Popen(args, env=env, cwd=work, stdout=log, stderr=log)
