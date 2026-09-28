@@ -1,0 +1,29 @@
+{
+  "format": "ds4-directional-steering-v1",
+  "shape": [
+    43,
+    4096
+  ],
+  "component": "ffn_out",
+  "thinking": false,
+  "pair_normalize": null,
+  "orthogonalize_control_mean": null,
+  "good_file": null,
+  "bad_file": null,
+  "model": null,
+  "note": "runtime positive scale suppresses this direction; negative scale amplifies it",
+  "provenance": {
+    "written_by_hand": true,
+    "reason": "this direction was downloaded, not built here; build_direction.py would have written this file and recorded good_file/bad_file above",
+    "source_url": "https://antirez.com/misc/refusal_train400_en_it_plus20_nothink_ffn_out.f32",
+    "sha256": "cf84bb41c44105b53cb12566234e3e30470c9c62cf1450bcad3156dd3a28ee42",
+    "bytes": 704512,
+    "verified": "fetched again on 2026-09-29 and byte-identical to the tracked copy",
+    "name_decodes_to": "400 training prompts, English and Italian, plus 20 more, thinking off, FFN output (inference from the filename, not a record)",
+    "dataset_published": false,
+    "deployed_as": "--dir-steering-file <this file> --dir-steering-ffn 3 in ~/.config/systemd/user/ds4-server.service",
+    "scale_3_calibration": "boundary sweep on two prompts that normally refuse, 24 tokens at temperature 0: scale 0 refuses, 2 refuses, 3 complies, 4 complies with unnecessary distortion; controls coherent at 3",
+    "caveat": "a global FFN activation edit, not a refusal switch; recorded as a possible contributor to planning repetition, unproven either way",
+    "see_also": "docs/DS4_ENGINE.md section 3.8"
+  }
+}

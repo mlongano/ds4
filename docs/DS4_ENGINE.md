@@ -284,9 +284,14 @@ Language Models Is Mediated by a Single Direction* (arXiv 2406.11717), and a sep
 documents `--prefix-file`, where a multi-turn prefix showing the assistant doing computer-security
 work carries the following security request, referenced to *Many-shot Jailbreaking*.
 
-**The local copy.** `dir-steering/.gitignore` ignores `out/`, so this `.f32` is untracked and would
-not survive a fresh clone or `git clean -xdf`. Copies of it and of the verbosity vector, with their
-checksums, are kept in `~/.local/opt/dir-steering/`, and the published original is one `curl` away.
+**Where the copy lives.** `dir-steering/.gitignore` ignores that directory's contents, but this
+artifact is not left to the disk: the `.f32` and a hand-written metadata JSON beside it are now
+tracked, matching how `verbosity.f32` and `verbosity.json` were already stored, and the ignore file
+negates those four names explicitly so the exception is visible rather than implied. The JSON uses
+the format key `build_direction.py` writes and fills in what a downloaded direction cannot: that it
+was downloaded rather than built here, the source URL, the checksum that matches the tracked bytes,
+what the filename implies about the dataset, the scale-3 calibration and the repetition caveat.
+Copies also sit in `~/.local/opt/dir-steering/`, and the published original is one `curl` away.
 
 ---
 

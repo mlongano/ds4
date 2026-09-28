@@ -1,3 +1,7 @@
-out/
+out/*
+!out/verbosity.f32
+!out/verbosity.json
+!out/refusal_train400_en_it_plus20_nothink_ffn_out.f32
+!out/refusal_train400_en_it_plus20_nothink_ffn_out.json
 *.pyc
 __pycache__/
