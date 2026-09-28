@@ -1,0 +1,10 @@
+test_circular_conversion_wraps_only_the_failing_boundary (__main__.RingTrackerBoundaryTest.test_circular_conversion_wraps_only_the_failing_boundary) ... ok
+test_clamp_changes_ceil_ring_semantics (__main__.RingTrackerBoundaryTest.test_clamp_changes_ceil_ring_semantics) ... ok
+test_current_final_half_word_is_one_past_end (__main__.RingTrackerBoundaryTest.test_current_final_half_word_is_one_past_end) ... ok
+test_current_mapping_at_required_boundaries (__main__.RingTrackerBoundaryTest.test_current_mapping_at_required_boundaries) ... ok
+test_sentinel_would_need_to_track_slot_zero (__main__.RingTrackerBoundaryTest.test_sentinel_would_need_to_track_slot_zero) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.006s
+
+OK
