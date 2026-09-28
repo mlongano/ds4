@@ -58,6 +58,6 @@ At every major change where one of the following could be affected, make sure to
 ## Upstream
 
 Upstream intake — before merging `antirez/ds4`, rebasing the local commits, or judging
-whether upstream has anything worth taking: read `UPSTREAM.md`. It carries the delta
+whether upstream has anything worth taking: read `docs/UPSTREAM.md`. It carries the delta
 inventory, the take/skip criteria, and the procedure with completion criteria. This file
 stays about code.
