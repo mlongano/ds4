@@ -1,4 +1,5 @@
 #include "ds4_rocm_stream_policy.h"
+#include "ds4_rocm_trace.cuh"
 #if defined(__linux__)
 #include <sys/vfs.h>
 #include <linux/magic.h>
@@ -2295,13 +2296,19 @@ static int cuda_stream_read_job_upload(
         if (job) job->errnum = EINVAL;
         return 0;
     }
+    const uint32_t trace_upload = rocm_trace_upload_begin(stream, job->bytes);
     cudaError_t err = cudaMemcpyAsync(job->dst,
                                       job->host_buf,
                                       (size_t)job->bytes,
                                       cudaMemcpyHostToDevice,
                                       stream);
+    rocm_trace_upload_end(trace_upload, stream, err == cudaSuccess);
     if (err == cudaSuccess && defer_wait) return 1;
-    if (err == cudaSuccess) err = cudaStreamSynchronize(stream);
+    if (err == cudaSuccess) {
+        const uint32_t trace_wait = rocm_trace_cpu_begin("upload_wait", (uint64_t)(uintptr_t)stream, job->bytes);
+        err = cudaStreamSynchronize(stream);
+        rocm_trace_cpu_end(trace_wait, err == cudaSuccess);
+    }
     if (err != cudaSuccess) {
         fprintf(stderr,
                 DS4_GPU_LOG_PREFIX "streaming read-worker upload failed: %s\n",
@@ -2324,7 +2331,9 @@ static void cuda_stream_read_pipeline_complete(
         uint64_t read_us, double upload_t0) {
     const int profile = g_stream_read_profile_enabled == 1;
     if (job->ok) {
+        const uint32_t trace_wait = rocm_trace_cpu_begin("upload_wait", (uint64_t)(uintptr_t)stream, job->bytes);
         const cudaError_t err = cudaStreamSynchronize(stream);
+        rocm_trace_cpu_end(trace_wait, err == cudaSuccess);
         if (err == cudaSuccess) {
             job->uploaded = 1;
             if (!job->direct) cuda_model_drop_file_pages(job->offset, job->bytes);
@@ -2385,7 +2394,11 @@ static void *cuda_stream_read_pipeline_worker(void *arg) {
 
         const int profile = g_stream_read_profile_enabled == 1;
         const double read_t0 = profile ? cuda_wall_sec() : 0;
-        if (job) cuda_stream_read_job_run(job, stage, stage_bytes);
+        if (job) {
+            const uint32_t trace_read = rocm_trace_cpu_begin("read", (uint64_t)(uintptr_t)stream, job->bytes);
+            cuda_stream_read_job_run(job, stage, stage_bytes);
+            rocm_trace_cpu_end(trace_read, job->ok);
+        }
         const uint64_t read_us = profile && job ?
             cuda_stream_read_profile_us(cuda_wall_sec() - read_t0) : 0;
         if (pending) {
@@ -2430,7 +2443,9 @@ static void *cuda_stream_read_worker(void *arg) {
 
         const int profile = g_stream_read_profile_enabled == 1;
         const double read_t0 = profile ? cuda_wall_sec() : 0.0;
+        const uint32_t trace_read = rocm_trace_cpu_begin("read", (uint64_t)(uintptr_t)g_stream_read_upload_streams[worker_id], job->bytes);
         cuda_stream_read_job_run(job, stage, stage_bytes);
+        rocm_trace_cpu_end(trace_read, job->ok);
         uint64_t read_us = 0;
         uint64_t upload_us = 0;
         if (profile) {
@@ -2682,9 +2697,11 @@ static int cuda_stream_read_jobs_wait(cuda_stream_read_job *jobs, uint32_t count
     if (!jobs || count == 0) return 1;
     const int profile = g_stream_read_profile_enabled == 1;
     const double wait_t0 = profile ? cuda_wall_sec() : 0.0;
+    const uint32_t trace_wait = rocm_trace_cpu_begin("read_jobs_wait", 0, 0);
     pthread_mutex_lock(&g_stream_read_mutex);
     if (g_stream_read_active_jobs != jobs) {
         pthread_mutex_unlock(&g_stream_read_mutex);
+        rocm_trace_cpu_end(trace_wait, 0);
         fprintf(stderr, DS4_GPU_LOG_PREFIX "streaming read wait received inactive job set\n");
         return 0;
     }
@@ -2719,6 +2736,7 @@ static int cuda_stream_read_jobs_wait(cuda_stream_read_job *jobs, uint32_t count
             ok = 0;
         }
     }
+    rocm_trace_cpu_end(trace_wait, ok);
     return ok;
 }
 
@@ -6430,6 +6448,7 @@ extern "C" void ds4_gpu_cleanup(void) {
     cuda_model_range_release_all();
     cuda_q8_f16_cache_release_all();
     cuda_stream_selected_cache_release();
+    rocm_trace_finish();
     g_q8_f16_disabled_after_oom = 0;
     g_q8_f16_disabled_for_multi_model = 0;
     g_q8_f16_budget_notice_printed = 0;

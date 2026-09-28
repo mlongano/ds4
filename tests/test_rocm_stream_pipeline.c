@@ -82,6 +82,18 @@ static void cuda_stream_read_job_run(cuda_stream_read_job *job, void *stage, uin
     job->ok = 1;
 }
 
+/* Disabled trace hooks must not change the worker's completion protocol. */
+static uint32_t rocm_trace_cpu_begin(const char *name, uint64_t lane, uint64_t bytes) {
+    (void)name; (void)lane; (void)bytes; return 0;
+}
+static void rocm_trace_cpu_end(uint32_t id, int ok) { (void)id; (void)ok; }
+static uint32_t rocm_trace_upload_begin(cudaStream_t stream, uint64_t bytes) {
+    (void)stream; (void)bytes; return 0;
+}
+static void rocm_trace_upload_end(uint32_t id, cudaStream_t stream, int ok) {
+    (void)id; (void)stream; (void)ok;
+}
+
 #include "ds4_stream_pipeline_under_test.h"
 
 static void run_case(unsigned count, unsigned workers, int failure, int profile) {

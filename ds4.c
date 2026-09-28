@@ -42,6 +42,9 @@
 
 #include "ds4.h"
 #include "ds4_distributed.h"
+#ifdef DS4_ROCM_BUILD
+#include "rocm/ds4_rocm_trace.h"
+#endif
 #include "ds4_image.h"
 #include "ds4_tp.h"
 
@@ -22802,6 +22805,16 @@ static bool metal_graph_encode_decode_layer_phase(
     bool ok = true;
     const bool decode_stage_profile = metal_graph_decode_stage_profile_enabled(il);
     double decode_stage_t0 = decode_stage_profile ? now_sec() : 0.0;
+#ifdef DS4_ROCM_BUILD
+    if (g->ssd_streaming && g->tp_world < 2 && !g->placement &&
+        phase == METAL_DECODE_LAYER_FULL) ds4_rocm_trace_layer(il, pos);
+#define DS4_ROCM_TRACE_STAGE(name) do { \
+        if (ok && g->ssd_streaming && g->tp_world < 2 && !g->placement) \
+            ds4_rocm_trace_stage(name); \
+    } while (0)
+#else
+#define DS4_ROCM_TRACE_STAGE(name) ((void)0)
+#endif
     const bool fuse_shared_gate_up =
         !g->quality &&
         g->tp_world < 2 &&
@@ -22850,6 +22863,7 @@ static bool metal_graph_encode_decode_layer_phase(
         layer->ffn_gate_inp->dim[0] == DS4_N_EMBD &&
         layer->ffn_gate_inp->dim[1] == DS4_N_EXPERT;
 #define DS4_METAL_PROFILE_DECODE_STAGE(name) do { \
+        DS4_ROCM_TRACE_STAGE(name); \
         if (ok && decode_stage_profile) { \
             ok = metal_graph_layer_stage_profile_boundary("decode", (name), il, pos, 1, &decode_stage_t0); \
         } \
@@ -23924,6 +23938,7 @@ static bool metal_graph_encode_decode_layer_phase(
                                                          DS4_N_EMBD, DS4_N_INDEXER_HEAD,
                                                          metal_graph_attn_norm(g), 1) != 0;
                 const float index_scale = 1.0f / sqrtf((float)(DS4_N_INDEXER_HEAD_DIM * DS4_N_INDEXER_HEAD));
+                DS4_ROCM_TRACE_STAGE("indexer_projection");
                 if (ok && decode_index_stage_profile) {
                     ok = metal_graph_indexer_stage_profile_boundary(NULL,
                                                                     il,
@@ -23940,6 +23955,7 @@ static bool metal_graph_encode_decode_layer_phase(
                                                                 DS4_N_INDEXER_HEAD,
                                                                 DS4_N_INDEXER_HEAD_DIM,
                                                                 index_scale) != 0;
+                DS4_ROCM_TRACE_STAGE("indexer_score");
                 if (ok && decode_index_stage_profile) {
                     ok = metal_graph_indexer_stage_profile_boundary("decode_score",
                                                                     il,
@@ -23953,6 +23969,7 @@ static bool metal_graph_encode_decode_layer_phase(
                                                            g->layer_n_index_comp[il],
                                                            1,
                                                            DS4_N_INDEXER_TOP_K) != 0;
+                DS4_ROCM_TRACE_STAGE("indexer_topk");
                 if (ok && decode_index_stage_profile) {
                     ok = metal_graph_indexer_stage_profile_boundary("decode_topk",
                                                                     il,
@@ -26231,6 +26248,7 @@ static bool metal_graph_encode_decode_layer_phase(
     }
     DS4_METAL_PROFILE_DECODE_STAGE("ffn_hc_post");
 #undef DS4_METAL_PROFILE_DECODE_STAGE
+#undef DS4_ROCM_TRACE_STAGE
     if (ok) {
         metal_graph_debug_dump_tensor("hc_ffn_post", metal_graph_after_ffn_hc(g), hc_dim, il, pos);
     }
