@@ -203,6 +203,7 @@ rdna4:
 .PHONY: test-rocm-streaming-unit
 test-rocm-streaming-unit:
 	python3 tests/test_rocm_stream_pipeline.py
+	python3 tests/test_rocm_trace.py
 	python3 tests/test_rocm_streaming_regression.py
 	python3 tests/test_rocm_server_regression.py
 
