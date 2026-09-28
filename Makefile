@@ -454,6 +454,14 @@ tests/test_rocm_q8_prefill: tests/test_rocm_q8_prefill.o ds4_rocm.o ds4_image.o 
 test-rocm-q8-prefill: tests/test_rocm_q8_prefill
 	./tests/test_rocm_q8_prefill
 
+tests/bench_indexer_score_rocm: tests/bench_indexer_score_rocm.cu
+	$(HIPCC) $(ROCM_CFLAGS) -o $@ $<
+
+.PHONY: bench-indexer-score-rocm
+bench-indexer-score-rocm: tests/bench_indexer_score_rocm
+	./tests/bench_indexer_score_rocm
+
+
 tests/test_mxfp4_rocm.o: tests/test_mxfp4_rocm.c ds4_gpu.h
 	$(CC) $(filter-out -ffast-math,$(CFLAGS)) $(ROCM_HOST_CFLAGS) -DDS4_ROCM_BUILD -I. -c -o $@ $<
 
