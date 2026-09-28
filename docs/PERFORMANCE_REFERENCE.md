@@ -126,9 +126,23 @@ model-range reset that later landed as `c229363`).
 
 ## Evidence inventory, and why it is fragile
 
-The raw evidence for these numbers is on disk, and almost none of it is versioned: `misc/` is
-gitignored (`.gitignore:42`), so the whole 1.3 GB is invisible to git and one `git clean -x`
-away from being lost.
+The raw evidence for these numbers is spread across two places that git does not protect, and one
+of them is not evidence at all.
+
+`misc/` is gitignored (`.gitignore:42`), so the whole 1.3 GB is invisible to git: it has no
+history, no copy on a remote, and it does not even appear in `git status`. `git clean -f` removes
+untracked files, and `git clean -x` removes ignored ones too, so `git clean -xdf` deletes all of
+it in one command, as would a fresh clone of the repository followed by an expectation that the
+directory would still be there.
+
+The part that is not evidence is the runtime. `misc/rocm-local-runtime-fixed-prefix/lib` is what
+`ds4-server-launch.sh` **requires**, refusing to start without it, and what qwen-flash's launchers
+put on `LD_LIBRARY_PATH` as well. The source it was built from,
+`misc/rocm-local-runtime-fixed-source`, is a clone of `ROCm/rocm-systems` on branch
+`ds4-sdma-pendingbytes-wrap-fix` carrying a single local commit `1a2897e7ad` (six lines in
+`amd_blit_sdma.h`) that is on no remote and is not an ancestor of `rocm-7.2.4`. The build trees
+are reproducible; that patch is not, and a second copy of the same patched tree in
+`misc/rocm-local-runtime` shares the exposure rather than protecting against it.
 
 | Path | Size | Contents |
 |---|---:|---|
@@ -139,9 +153,17 @@ away from being lost.
 | `misc/rocm-local-runtime{fixed-,-}build/`, `…/{fixed-,}prefix/` | 36M, 36M, 7.1M, 7.0M | build trees and the loadable prefixes |
 | `misc/rocm-prefetch-20260919/` | 14M | prefetch experiments with per-run `results.json` |
 
-Ephemeral but currently live: `/tmp/ds4-generation-perf/` (frozen baselines, `replay.py`, the
-arena sweep), `/tmp/ds4-deeper-perf/`, `/tmp/ds4-next-perf/` (including `final-verified`),
-`/tmp/ds4-perf-tests/`. These are the only copies of several baselines and diffs.
+Two things did not survive. `/tmp/ds4-generation-perf/`, `/tmp/ds4-deeper-perf/`, `/tmp/ds4-next-perf/` and
+`/tmp/ds4-perf-tests/` are gone: they held the frozen reference binaries (`ds4-baseline`,
+`ds4-bench-baseline`) that every A/B table in this file was measured against, the `replay.py`
+scenario harness, and the per-run `results.json` directories. The reference binaries are only
+older builds of this repository, so they can be rebuilt from the recorded commits, but the
+harness has to be recovered from the development transcripts, which contain its diffs rather
+than its final text.
+
+The end-of-session handoff `/tmp/ds4-session-summary-2026-09-04-to-09-17.md`, the only written
+account of the September 7 crash, the thinking-loop investigation and a security note, is also
+in `/tmp` and unversioned.
 
 If any of this is meant to survive a reboot, the cheap subsets are the `results.json`,
 `metadata.json`, `provenance.json` and small log files; the build trees are reproducible from
