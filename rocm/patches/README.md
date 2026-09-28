@@ -44,6 +44,28 @@ cmake --build misc/rocm-local-runtime-fixed-build --target install
 The install manifest has 37 entries: `include/hsa/`, `include/hsakmt/`, `lib/libhsa-runtime64.so*`,
 `lib/libhsakmt.a` and CMake package files. Only `lib/` matters at runtime.
 
+**Rebuilding it.** The patch is the only irreplaceable part and it is in git now; the library itself
+rebuilds from upstream plus that patch:
+
+```bash
+git clone --filter=blob:none --branch rocm-7.2.4 https://github.com/ROCm/rocm-systems.git rocm-systems
+git -C rocm-systems apply ds4/rocm/patches/0001-rocr-wrap-final-sdma-tracker-half-word.patch
+cmake -S rocm-systems -B rocm-systems-build \
+  -DCMAKE_INSTALL_PREFIX=<prefix> \
+  -DBUILD_SHARED_LIBS=ON -DIMAGE_SUPPORT=ON -DCMAKE_BUILD_TYPE=None
+cmake --build rocm-systems-build --target install
+```
+
+`rocm-7.2.4` is an upstream tag (`b12dffd90a41dc9486aadfa039b635a4fb19a763`), and the patch applies
+cleanly to it: checked 2026-09-29 by applying it to that tag's `amd_blit_sdma.h`, which reproduced
+`misc/rocm-local-runtime-fixed-source`'s file byte for byte.
+
+The loaded binary was built with **GCC 16.2.1** (`/usr/bin/c++`), a detail that lives only in the
+gitignored `misc/rocm-local-runtime-fixed-build/CMakeCache.txt`. A rebuild on another compiler or
+with different flags still gives a working library, but it will not hash to `1009e6f5…`; re-record
+the new SHA-256 wherever the old one is quoted (`~/.local/opt/rocr-r9700/README.md`, the qwen
+project's `PROVENANCE.md`) and re-run the ROCm smoke tests before trusting it.
+
 **What loads it.** `ds4-server-launch.sh` puts `misc/rocm-local-runtime-fixed-prefix/lib` first on
 `LD_LIBRARY_PATH` and **exits with an error if the prefix is missing**, and qwen-flash's
 `../qwen-3.8-flash/run-mtp-pr-test.sh` and `sweep-longcontext.sh` load the same prefix, so both
@@ -58,5 +80,7 @@ servers run one ROCr build. `UPSTREAM.md` calls the prefix a published interface
 
 A copy of the built prefix, this patch and the checksums is kept outside the repository at
 `~/.local/opt/rocr-r9700/`, so `git clean -xdf` in the repository cannot take the runtime with it.
-Nothing references that copy yet: repointing the launchers at it would remove the dependency on a
-gitignored directory entirely, and is the obvious next step if the prefix is ever rebuilt or moved.
+`ds4-server-launch.sh` still points at the repository prefix; qwen-flash's `run-mtp-pr-test.sh` and
+`sweep-longcontext.sh` resolve `$FIXED_ROCR`, then the repository prefix, then this copy, and refuse
+when none of them exists (2026-09-29). Repointing every launcher at the stable copy would remove the
+dependency on a gitignored directory entirely, and is still the obvious next step.
