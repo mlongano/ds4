@@ -227,6 +227,56 @@ cd /media/NVME_DATA/MOUNTS/Models/ds4
 - GPU intervals are stream intervals, which include submission and scheduling gaps, so they are not kernel busy time; the JSON metadata says so as well.
 - `tests/rocm_trace_summary.py <trace.json>` validates a trace and prints unioned intervals. `make test-rocm-streaming-unit` runs the mocked-GPU suite.
 
+### 3.8 Refusal steering
+
+The production unit applies a directional steering vector, which is why the command line in §3.4
+carries `--dir-steering-file … --dir-steering-ffn 3`:
+
+```text
+--dir-steering-file /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32
+--dir-steering-ffn 3
+```
+
+The file is 704,512 bytes: 43 layers x 4096 x float32, one direction per FFN layer, sha256
+`cf84bb41c44105b53cb12566234e3e30470c9c62cf1450bcad3156dd3a28ee42`. The option is
+`--dir-steering-ffn`; `--dist-steering-ffn` does not exist.
+
+**How scale 3 was chosen.** A first sweep on benign prompts showed no distortion through scale 4
+and only a small decode cost, but those prompts complied at scale 0 and could not locate a
+threshold. A second boundary sweep used two prompts that normally produce an immediate refusal,
+run as `--nothink --temp 0 -n 24` — 24 tokens can classify the opening as refusal or compliance and
+cannot produce content — at scales 0, 2, 3 and 4, classifying each output by refusal markers:
+
+| Scale | Result |
+|---|---|
+| 0 | refuses both |
+| 2 | still refuses |
+| 3 | complies with both — **selected** |
+| 4 | complies, and adds unnecessary distortion |
+
+Controls stayed coherent at 3 (benign English and Italian prompts, plus a database question), decode
+overhead measured 0-2%, and the vision measurements taken in the same period used steering at 3 with
+no measurable penalty.
+
+**What it is not.** This is a global edit to FFN activations, not a refusal switch. `dir-steering/README.md`
+says the same in general terms: the method is a low-rank runtime edit, "not a fine-tune", and it works
+best for coarse behaviour. The repetition investigation recorded it as a possible contributor to
+planning loops, alongside long context, the thinking-mode mapping and the ROCm path, with no proof in
+any direction. The README's warning applies: a scale that makes the model repetitive, ignore the
+prompt, or lose factual content is too strong.
+
+**Building another direction**, from `dir-steering/README.md` and `dir-steering/tools/build_direction.py`:
+concept-heavy prompts in `good-file`, neutral prompts in `bad-file`, then a positive FFN scale for
+concept removal (negative amplifies). The tool captures activations from the same graph inference
+uses, averages target minus contrast, normalises one vector per layer, and writes both the `.f32` and
+a metadata JSON. `dir-steering/tools/run_sweep.py` is the calibration helper.
+
+**Two gaps.** This vector has no metadata JSON, so its layer list, prompt sets and build command are
+unrecorded; the verbosity vector has one. The calibration prompt sets and the sweep outputs lived in
+`/tmp` and are gone, leaving only the harness command and the table above. And `dir-steering/.gitignore`
+ignores `out/`, so the `.f32` is untracked and would not survive a fresh clone or `git clean -xdf`; a
+copy with its checksum is kept in `~/.local/opt/dir-steering/`.
+
 ---
 
 ## 4. Coordinating with the router/Studio via `pi-inference`
