@@ -15,6 +15,7 @@ next intake merge leaves both sets side by side with no collisions.
 | [`ROCM_STREAMING_PLAN.md`](ROCM_STREAMING_PLAN.md) | The measurement record for the streaming work: long-context baseline, cost split, the SDMA workaround, the rejected cache-policy trial, the decode trace, and the next bounded pass with its acceptance and stopping rules |
 | [`UPSTREAM.md`](UPSTREAM.md) | What the local delta is, how to judge what upstream is worth taking, and the refresh-first intake procedure with its completion criteria |
 | [`DS4_ENGINE.md`](DS4_ENGINE.md) | What the engine is, how the R9700 port was done, the on-demand RAM disk, coordination through `pi-inference`, the public endpoint, and context/cache tuning |
+| [`PERFORMANCE_REFERENCE.md`](PERFORMANCE_REFERENCE.md) | The measured landscape: hardware characterisation, the prefill/decode frontier, accepted and rejected tuning with the numbers that decided them, known failure modes and their workarounds, the live environment knobs, and the inventory of evidence that is not in git |
 
 Paths quoted in these documents are relative to the repository root (`rocm/...`, `ds4.c`,
 `ram-disk-up.sh`, `tests/...`) unless a document says otherwise. Absolute paths that begin

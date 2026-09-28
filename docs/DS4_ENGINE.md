@@ -14,7 +14,7 @@ The model in use, DeepSeek V4 Flash at `IQ2XXS` quantization, is an 86,720,111,7
 
 - **Non-routed weights** (attention, shared experts, embeddings, output head — ~8.2 GiB for this model) load once and stay resident on the GPU.
 - **Routed experts** (the MoE-specific weights selected per-token by the router, 6.75 MiB each) are *not* preloaded. They're read from the backing file on demand as the model's router selects them, uploaded to the GPU, and kept in a bounded **resident expert cache** sized as a percentage of the GPU's recommended working set (default 80%, tunable via `DS4_SSD_AUTO_CACHE_PCT`, see `ds4_ssd.c`; this deployment runs 65% — see §6).
-- When the cache is full, eviction prefers **older layers first** (`cuda_stream_evict_past_layers_first`), falling back to plain LRU by `last_used` timestamp — the intuition being that during autoregressive decode, layers already passed in this forward pass are less likely to be needed again soon than layers still ahead.
+- When the cache is full, eviction is plain LRU by `last_used` timestamp. Setting `DS4_ROCM_STREAM_EVICT_PAST_LAYERS_FIRST` to any value other than `0` switches to preferring **older layers first** (`cuda_stream_evict_past_layers_first`), on the intuition that during autoregressive decode the layers already passed in this forward pass are less likely to be needed again soon than the ones still ahead. It is off by default.
 - Reads use **`O_DIRECT`** by default to skip the page cache — avoids an extra copy and page-cache churn for every streamed expert, since each read is used once and discarded. Any read that fails direct I/O silently falls back to buffered `pread` for that job only (`cuda_stream_read_job_run` in `rocm/ds4_rocm_runtime.cuh`); it can also be disabled globally with `DS4_ROCM_STREAM_NO_DIRECT=1`.
 - A configurable **free-VRAM reserve** (`DS4_ROCM_STREAM_FREE_RESERVE_GB`, 2–64 GiB, default 16) is kept free while growing the cache, to cover decode scratch and transient graph buffers without tripping an allocation failure.
 
@@ -165,10 +165,16 @@ The script also pins the ROCr runtime the streaming measurements depend on: it p
 Environment=DS4_ROCM_STREAM_FREE_RESERVE_GB=2
 Environment=DS4_SSD_AUTO_CACHE_PCT=65
 ExecStart=/media/NVME_DATA/MOUNTS/Models/ds4/ds4-server-launch.sh \
-  --ctx 262144 --port 8000 --ssd-streaming --ssd-streaming-cold
+  --ctx 262144 --port 8000 \
+  --ssd-streaming --ssd-streaming-cold \
+  --ssd-streaming-cache-experts 18GB \
+  --vision /media/NVME_DATA/MOUNTS/Models/ds4/gguf/DeepSeek-V4-Flash-Vision-Encoder.gguf \
+  --dir-steering-file /media/NVME_DATA/MOUNTS/Models/ds4/dir-steering/out/refusal_train400_en_it_plus20_nothink_ffn_out.f32 \
+  --dir-steering-ffn 3
 ExecStopPost=/media/NVME_DATA/MOUNTS/Models/ds4/ram-disk-down.sh
 Restart=on-failure
 ```
+The `--vision` argument loads the Vision-Exp encoder, and `--dir-steering-file … --dir-steering-ffn 3` applies the refusal-steering vector at scale 3. Scale 3 is the lowest value that was effective when it was tested, and `--dist-steering-ffn` does not exist; scale and the encoder path are part of the production profile, not optional extras, so any comparison that omits them is measuring a different server.
 `--ctx` and `DS4_SSD_AUTO_CACHE_PCT` are tuned together, not independently — see §6 for why the second one has to move whenever the first does.
 `ExecStopPost` releases the RAM disk on **every** stop, even on a run where the SSD fallback ended up serving instead (`ram-disk-down.sh` no-ops harmlessly when nothing's mounted). One consequence: a plain `systemctl restart` re-copies the full 81 GB on the way back up rather than reusing a still-warm disk, since stop always tears it down first.
 
