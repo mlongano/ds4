@@ -8,8 +8,8 @@ Release gates: `QA_BEFORE_RELEASES.md`. This file is only about upstream.
 
 - Upstream: <https://github.com/antirez/ds4>, branch `main`. This repo is a fork whose
   delta is the ROCm/RDNA4 port and the RAM-disk SSD streaming mode.
-- At last writing: 11 local commits ahead, 131 behind (merge base `b0a147a`, 2026-09-02).
-  Upstream moves fast; distrust these numbers and refresh first:
+- At last writing: 29 local commits ahead, 156 behind (merge base `b0a147a`, 2026-09-02;
+  refreshed 2026-10-05). Upstream moves fast; distrust these numbers and refresh first:
 
   `git fetch origin && git rev-list --count origin/main..HEAD && git rev-list --count HEAD..origin/main`
 
@@ -22,8 +22,12 @@ live inventory; at last writing:
 |---|---|---|
 | ROCm/RDNA4 port (WMMA fallback, VRAM reserve) | `85ec136` | `rocm/`, `ds4_rocm.*`, `Makefile` |
 | RAM-disk SSD streaming | `318b3d5`, `d98551b`, `45eafee` | `ram-disk-*.sh`, `ds4_ssd.*` |
-| ROCm perf (prefill arenas, expert transfer pipeline, pinned expert pointers, shared KV/expert VRAM) | `3d53ea9`…`c229363` | `ds4.c`, `rocm/` |
+| ROCm perf (prefill arenas, expert transfer pipeline, pinned expert pointers, shared KV/expert VRAM) | `3d53ea9`, `cc0ef07`, `78dce0e`, `df7cc08`, `35bacb1`, `c229363` | `ds4.c`, `rocm/` |
+| Decode tracing and microbenchmarks | `e91fdaf`, `9101e0c`, `6557dd8`, `613c00b` | `rocm/`, `tests/`, `Makefile` |
 | Metal TP portability | `575a4c7` | `ds4.c`, `metal/` |
+| Local ROCr runtime launch fix | `a825b94` | `ds4-server-launch.sh` |
+| Bench sweeps | `42e19db` | `bench-*.sh` |
+| Documentation and rescued evidence | 12 `docs:` commits | `docs/`, `evidence/` |
 
 - The tree may also carry uncommitted ROCm work. Intake starts from a clean tree:
   `git status --porcelain` must print nothing, or stop and get it committed first.
@@ -52,8 +56,10 @@ Completion criterion: a written take/skip verdict, with reason, for **every** co
 1. **Baseline the current tree.** Build (`make rdna4`), run the gates in step 4, and record
    speed numbers. → complete when: gates pass and numbers are written down, so any failure
    after the merge is the merge's fault.
-2. **Triage.** `git fetch origin`, then the verdict per commit above. → complete when: every
-   incoming commit has a verdict.
+2. **Triage.** `git fetch origin`, then the verdict per commit above. The verdict file
+   for the 2026-10-05 intake is `docs/UPSTREAM-INTAKE-2026-10-05.md`; the reasoning
+   behind it is in `docs/STATE_OF_THE_CODEBASE_MiMo-V2.6-Pro_2026-10-05.md`.
+   → complete when: every incoming commit has a verdict.
 3. **Merge on a branch.** `git switch -c intake-$(date +%Y%m%d) && git merge origin/main`.
    Never rebase the local history: the 11 commits are referenced by `local-models` handoff
    docs and qwen-flash's ROCr prefix. Conflict policy: local wins in `rocm/`, `metal/`,
