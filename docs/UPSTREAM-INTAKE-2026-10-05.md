@@ -34,7 +34,7 @@ Verdict vocabulary:
 | take (build hygiene) | 8 | Protects `make rdna4` and the test builds |
 | take, no effect here (Metal-only) | 4 | |
 | skip (gfx1151 tuning) | 4 | R9700-only, decided 2026-10-05 |
-| take as-is (DeepSeek v4.1, no ROCm path upstream) | 4 | The code merges in; running it here is a later project |
+| take as-is (DeepSeek v4.1, no ROCm path upstream) | 4 | Wanted on the R9700; needs the port described below |
 | skip (Qwen3.8 cluster) | 20 | |
 | skip (Metal batched decode, speculative batches) | 29 | |
 | skip (CUDA and DSpark tuning) | 5 | |
@@ -166,10 +166,12 @@ Also model-bound and dead if the model changes: the refusal vector is 43 x 4096 
 Flash and has to be rebuilt, not copied, and the vision encoder pairing and expert
 cache defaults need re-checking.
 
-Verdict: take the code as-is, no v4.1-specific intent to defend in conflicts. Porting
-v4.1 to the R9700 is a separate project on its own branch, with its own weights
-download and its own validation, and it should start only when the model is actually
-wanted here.
+Verdict: take the code as-is. v4.1 is wanted on this machine (decided 2026-10-05),
+which turns "port v4.1 to the ROCm backend" into planned work rather than a footnote.
+The feasibility picture, the weights and disk blocker, and the phased plan live in
+`docs/STATE_OF_THE_CODEBASE_MiMo-V2.6-Pro_2026-10-05.md`. The refusal direction must be
+rebuilt for v4.1 either way, and rebuilding it on a published dataset with recorded
+calibration is the chance to improve on `refusal_train400`, not just match it.
 
 - `bd66c40` DeepSeek v4.1 Flash support for Metal.
 - `a04f46f` DeepSeek v4.1 Flash support for CUDA.

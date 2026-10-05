@@ -212,13 +212,11 @@ Skip: the gfx1151 tuning set (`1ef9bba`, `e83b106`, `64e490b`, `394865c`, merge
 Strix tuning is not intent we defend in conflicts.
 
 DeepSeek v4.1 Flash support (`bd66c40`, `a04f46f`, `d9bc45d`, `6c00e2d`) is
-taken as-is, with one thing understood. Upstream wrote v4.1 for Metal and CUDA
-only, and nothing in the queue ports it to the ROCm backend. After the merge the
-code is inert on the R9700 until someone does that port. Until then a v4.1 model
-cannot be served here. If that day comes it is its own project, its own branch,
-its own weights download, and it must rebuild the refusal vector, because the
-deployed 43 x 4096 direction is bound to V4 Flash and cannot be copied to
-another model.
+wanted, decided on 2026-10-05. The code merges as-is, but serving v4.1 on the
+R9700 needs a port first: upstream implements v4.1 for Metal and CUDA only, and
+says so in its `docs/MODELS.md`, "DSpark, pipeline execution and ROCm are not
+implemented for V4.1; vision requires Metal". What the port involves is in the
+v4.1 section below.
 
 Skip: the Qwen3.8 Flash Next cluster (about 45 commits), the Metal batched
 decode and speculative batch work (about 25), CUDA/DSpark tuning, agent and
@@ -232,6 +230,69 @@ clean. The conflict policy in `docs/UPSTREAM.md` still applies: local wins in
 `rocm/`, `metal/`, `ram-disk-*.sh`, `ds4_ssd.*`, upstream wins in `tests/`,
 `third_party/`, and `ds4.c` hunks are resolved by re-applying our perf intent on
 top of upstream's version.
+
+## DeepSeek v4.1 Flash on the R9700: feasibility, 2026-10-05
+
+Wanted, so here is what it actually costs, checked against upstream's own
+documentation and this machine's numbers.
+
+**Weights and disk, the first blocker.** Upstream publishes three v4.1 files in
+`antirez/deepseek-v4.1-flash-gguf`: `DeepSeek-V4.1-Flash-Q2.gguf` (341 GiB on
+disk, 152 GiB of main weights plus 189 GiB of Engram tables read from the file
+on demand), `DeepSeek-V4.1-Flash-Q4.gguf` (483 GiB, 294 GiB main), and
+`DeepSeek-V4.1-Flash-Vision.gguf` (0.9 GiB, the matching encoder). This NVMe
+has 170 GB free. The Q2 file does not fit, and it cannot be split from its
+Engram tables because those are read directly from the file in every mode. Free
+about 200 GB more, or plan for a different disk. Nothing else on this list
+matters until this is solved.
+
+**Memory, fine.** 152 GiB of main weights against 128 GiB of RAM and 32 GiB of
+VRAM is the situation upstream already supports on 128 GB machines, via SSD
+streaming off a fast local SSD. The 90 GiB RAM disk cannot hold it and does not
+need to; plain `--ssd-streaming` is the mode, with the same expert-cache knobs
+this fork already tunes.
+
+**ROCm port, the real work.** The fork's GPU layer is a parallel implementation
+of `ds4_gpu.h`: `rocm/` is 33,700 lines mirroring `ds4_cuda.cu`'s 33,229, and
+this fork has since rewritten parts of it (about 640 changed lines in
+`rocm/ds4_rocm_runtime.cuh` alone). Upstream's v4.1 work added
+`ds4_deepseek41_cuda.cuh` (528 lines of new kernels), `ds4_deepseek41_gpu.h`, and
+about 1,313 changed lines in `ds4_cuda.cu`. Porting means mirroring all of that
+into `rocm/`, on top of our local changes in the same files, then extending the
+fork's streaming machinery (expert cache, SSD reads, the decode pipeline) to the
+new graph and its Engram reads. Text first, validated against upstream's QA
+frontier logits. This is a multi-session job, and it is the piece that needs the
+most care.
+
+**Vision.** The user is right that it is native: one main GGUF plus a 0.9 GiB
+encoder, no separate 86 GB Vision-Exp model like V4 Flash needed. Upstream wires
+image input on Metal only, so images on the R9700 are part of the port, after
+text works.
+
+**The refusal vector.** The deployed direction is 43 x 4096, shaped for V4
+Flash, and cannot carry over. What maintains, and can improve, is the method:
+`dir-steering/tools/build_direction.py` takes paired good/bad prompt lists and
+writes the direction plus a provenance JSON. It needs a v4.1 profile (layer
+count and embedding width, readable from the GGUF metadata; upstream added a
+qwen profile but no v4.1 one yet). Improvement over `refusal_train400` is
+realistic, because its weaknesses are documented: the 400-prompt dataset was
+never published, and the possible contribution to planning repetition is
+recorded but unproven. A v4.1 direction trained on a dataset we publish, with
+calibration recorded the way scale 3 was (boundary sweep, greedy, controls) and
+with the repetition caveat measured rather than suspected, would be strictly
+better work. "Maintain or improve" then means: keep the same activation-edit
+method, improve the provenance and the calibration.
+
+Phased, with the dependency order as I see it:
+
+1. Disk headroom for the 341 GiB Q2 file.
+2. The intake merge of `origin/main`, which is where the v4.1 code lives.
+3. ROCm port of the v4.1 text graph, validated against upstream's reference
+   logits before any speed work.
+4. Streaming and expert-cache adaptation for the Engram reads, then the usual
+   perf pass with the bit-identical A/B discipline from `speed-bench/`.
+5. Vision on ROCm.
+6. The v4.1 refusal direction, dataset and calibration recorded from the start.
 
 ## Repository hygiene
 
@@ -273,9 +334,9 @@ Loose ends I found, in rough order of annoyance:
   attention, targeted transfer benchmark, SDMA runtime investigation) that has
   not been started. The SDMA assertion is still only worked around by disabling
   SDMA, at a 10% decode cost.
-- If DeepSeek v4.1 arrives in `gguf/`, the refusal vector, the vision encoder
-  pairing and the expert cache defaults all need re-checking before it goes near
-  the service.
+- DeepSeek v4.1 is wanted and planned (section above). It is gated on disk
+  headroom and on the ROCm port, and both the refusal vector and the vision
+  encoder pairing are model-bound and must be rebuilt for it.
 
 ## Method note
 
