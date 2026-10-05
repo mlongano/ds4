@@ -874,6 +874,7 @@ kernel void kernel_glm_store_indexer_k(
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     const float mean = scratch[0] / (float)head_dim;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
 
     float ss = 0.0f;
     for (uint i = tid; i < head_dim; i += nth) {
@@ -1500,6 +1501,7 @@ kernel void kernel_glm_attention_full(
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     const float max_score = red[0];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
 
     float local_sum = 0.0f;
     for (uint s = tid; s < visible; s += nth) {
@@ -3082,6 +3084,7 @@ static void kernel_glm_attention_indexed_decode_split_group8_reduce_impl(
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     const float max_m = red[0];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
 
     float local_denom = 0.0f;
     if (tid < n_blocks) {
@@ -3266,6 +3269,7 @@ kernel void kernel_glm_attention_indexed_decode(
             threadgroup_barrier(mem_flags::mem_threadgroup);
         }
         const float max_score = red[0];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
 
         float local_sum = 0.0f;
         for (uint s = tid; s < args.n_selected; s += nth) {
@@ -3364,6 +3368,7 @@ kernel void kernel_glm_attention_indexed_decode(
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     const float max_score = red[0];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
 
     float local_sum = 0.0f;
     for (uint s = tid; s < args.n_selected; s += nth) {
@@ -3527,6 +3532,7 @@ kernel void kernel_glm_attention_indexed_batch(
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     const float max_score = red[0];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
 
     float local_sum = 0.0f;
     for (uint s = tid; s < args.n_selected; s += nth) {
@@ -3713,6 +3719,7 @@ kernel void kernel_glm_attention_indexed_batch_group2(
     }
     const float max_score0 = red0[0];
     const float max_score1 = red1[0];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
 
     float local_sum0 = 0.0f;
     float local_sum1 = 0.0f;
@@ -5178,7 +5185,10 @@ kernel void kernel_dsv4_router_transform_finalize_weights_one_simd(
         device const float4 *s = (device const float4 *)logits;
         device float4 *d = (device float4 *)probs;
         const float4 x = s[tid];
-        const float4 sp = select(log(1.0f + exp(x)), x, x > 20.0f);
+        const float4 ex = exp(x);
+        const float4 em = min(ex, 0.03125f);
+        const float4 poly = em*(1.0f - em*(0.5f - em*(1.0f/3.0f - 0.25f*em)));
+        const float4 sp = select(select(log(1.0f + ex), poly, ex < 0.03125f), x, x > 20.0f);
         d[tid] = sqrt(sp);
     }
     threadgroup_barrier(mem_flags::mem_device);
@@ -5339,7 +5349,10 @@ kernel void kernel_dsv4_router_project_select_fused(
             (device volatile const float4 *)logits;
         device float4 *d = (device float4 *)probs;
         const float4 xv = s[tid];
-        const float4 sp = select(log(1.0f + exp(xv)), xv, xv > 20.0f);
+        const float4 ex = exp(xv);
+        const float4 em = min(ex, 0.03125f);
+        const float4 poly = em*(1.0f - em*(0.5f - em*(1.0f/3.0f - 0.25f*em)));
+        const float4 sp = select(select(log(1.0f + ex), poly, ex < 0.03125f), xv, xv > 20.0f);
         d[tid] = sqrt(sp);
     }
     threadgroup_barrier(mem_flags::mem_device);
