@@ -1,0 +1,43 @@
+ds4: Linux rocm backend set oom_score_adj=1000
+ds4: ROCm backend initialized on AMD Radeon AI PRO R9700 (sm_120)
+ds4: rocm SSD streaming cache target 18.00 GiB; effective 18.00 GiB = 3.38 GiB prefill headroom + 14.62 GiB dynamic cache (2218 experts, 6.75 MiB each)
+ds4: SSD streaming initial rocm model map restricted to token embedding (1 spans, 0.99 GiB tensor span)
+ds4: ROCm loading model tensors into device cache
+ds4: ROCm preparing model tensor mappings
+ds4: ROCm startup model preparation covered 0.99 GiB of tensor spans in 0.000s
+ds4: rocm backend initialized for graph diagnostics
+ds4: memory: KV 3.72 GiB (raw 0.36 + compressed 3.36) + buffers 2.00 GiB + resident model 2.81 GiB + expert cache 14.62 GiB + prefill expert reserve 3.38 GiB = 26.53 GiB planned
+ds4: memory detail: ctx=262144 prefill_cap=4096 raw_kv_rows=4352 compressed_kv_rows=65538 backend=rocm
+1006 22:07:13 ds4-server: context buffers 5855.75 MiB (ctx=262144, backend=rocm, prefill_chunk=4096, raw_kv_rows=4352, compressed_kv_rows=65538)
+ds4: accelerator using managed KV cache for ctx=262144 (kv cache 3.72 GiB, context buffers 5.72 GiB); this may degrade performance but is needed for very large contexts
+1006 22:07:14 ds4-server: listening on http://127.0.0.1:8102
+1006 22:07:15 ds4-server: chat ctx=0..10720:10720 prompt start
+1006 22:07:15 ds4-server: chat ctx=0..10720:10720 prefill chunk 0/10720 (0.0%) chunk=0.00 t/s avg=0.00 t/s 0.001s
+ds4: ROCm loading model tensors 9.37 GiB cached
+ds4: ROCm loading model tensors 7.44 GiB cached
+ds4: ROCm loading model tensors 5.58 GiB cached
+ds4: ROCm loading model tensors 3.75 GiB cached
+ds4: ROCm loading model tensors 1.89 GiB cached
+ds4: ROCm loading model tensors 0.06 GiB cached
+1006 22:08:20 ds4-server: chat ctx=0..10720:10720 prefill chunk 4096/10720 (38.2%) chunk=63.23 t/s avg=63.23 t/s 64.780s
+ds4: ROCm loading model tensors 6.15 GiB cached
+ds4: ROCm loading model tensors 3.75 GiB cached
+ds4: ROCm loading model tensors 1.89 GiB cached
+ds4: ROCm loading model tensors 0.06 GiB cached
+ds4: ROCm loading model tensors 12.95 GiB cached
+ds4: ROCm loading model tensors 11.12 GiB cached
+1006 22:09:25 ds4-server: chat ctx=0..10720:10720 prefill chunk 8192/10720 (76.4%) chunk=62.76 t/s avg=63.00 t/s 130.041s
+ds4: ROCm loading model tensors 1.51 GiB cached
+ds4: ROCm loading model tensors 0.06 GiB cached
+ds4: ROCm loading model tensors 12.95 GiB cached
+ds4: ROCm loading model tensors 11.12 GiB cached
+ds4: ROCm loading model tensors 9.27 GiB cached
+ds4: ROCm loading model tensors 7.44 GiB cached
+ds4: ROCm loading model tensors 5.58 GiB cached
+1006 22:10:30 ds4-server: chat ctx=0..10720:10720 prefill chunk 10720/10720 (100.0%) chunk=38.85 t/s avg=54.94 t/s 195.113s
+1006 22:10:30 ds4-server: chat ctx=0..10720:10720 prompt done 195.113s
+1006 22:10:46 ds4-server: chat ctx=10720..10770:50 gen=50 THINKING decoding chunk=3.07 t/s avg=3.07 t/s 16.271s
+1006 22:10:50 ds4-server: chat ctx=10770..10784:14 gen=64 THINKING decoding chunk=3.78 t/s avg=3.20 t/s 19.970s
+ds4-server: thinking not closed, ignoring incomplete DSML in reasoning
+1006 22:10:50 ds4-server: chat ctx=0..10720:10720 gen=64 THINKING finish=length 215.083s
+1006 22:10:50 ds4-server: shutdown requested, draining requests

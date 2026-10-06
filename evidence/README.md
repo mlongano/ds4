@@ -19,6 +19,7 @@ the model files, and the lost `/tmp` baselines.
 | `misc/rocm-vision-profile-20260917/` | The vision profiling session: `short-profile/`, `long-profile/`, `long-aa/`, `sdma-short/`, the cache-frequency screen, and the cache experiment patch. Also `short-replay/` with the frozen `request.json`, `metadata.json` and `provenance.json`, which is what makes a replay reproducible. |
 | `misc/rocm-timeline-20260918/` | The SDMA timeline work: `short-trace/` results, `pcie-topology.txt`, `amd_blit_sdma` sources under review, plus `implementation.patch`, `final-checkout.patch` and the two patches marked rejected (`rejected-online-attention.patch`, `rejected-indexer-wave-rows.patch`) — the negative results, which are usually the ones lost. |
 | `misc/rocm-prefetch-20260919/` | The prefetch experiments: four `fixed-*` runs with their `results.json`, `long-layer-partition.json`, and `draft-sdma-pendingbytes.patch`, an earlier draft of the ROCr patch that now lives in `rocm/patches/`. |
+| `misc/ab-server-prefill-20261006/` | The merged-versus-baseline server prefill A/B behind `ROCM_STREAMING_PLAN.md`'s server-path gap section: identical request and flags, both response bodies, both server logs. |
 | `rescued-from-tmp/` | The crash-analysis tooling, which existed only in `/tmp`: five gdb scripts used to symbolise the ROCr abort from the core dump, the two ring-state logs from the SDMA investigation, and the ROCr ABI symbol dumps (`local.syms`, `system.syms`) that compare the project-local prefix against `/opt/rocm`. |
 
 ## Reading a run

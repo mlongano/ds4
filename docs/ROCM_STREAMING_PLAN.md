@@ -913,3 +913,57 @@ cache-only growth, intra-layer down-transfer reordering, causal cache-policy
 changes, lossless transfer compression and CPU miss offload for the current
 10-15% target. The Belady result is an upper bound, not a demonstrated
 optimization or an absolute hardware/software ceiling.
+
+## Server-path prefill gap against the CLI frontier, 2026-10-06
+
+A pi session served through `ds4-server` sat silent for 12.7 minutes while the prompt
+prefilled, which raised two questions: whether the 2026-10-05 merge of `origin/main` had
+regressed the streaming path, and why the server runs below the recorded CLI frontier.
+Both are now answered.
+
+**The merge is not the cause.** Merged (`08c380d`) against the pre-merge snapshot
+(`ab751c9`, branch `rocm-rdna4-streaming-V4-flash`), same request, same flags, same
+machine:
+
+| | Merged | Baseline |
+|---|---:|---:|
+| Prefill, 10,720 tokens | 195.01 s (about 55 t/s) | 195.11 s (about 55 t/s) |
+| Decode, thinking, 64 tokens | 3.06-3.77 t/s | 3.07-3.80 t/s |
+| Wall clock | 215 s | 215 s |
+
+Identical to within 0.05%. Artifacts: `evidence/misc/ab-server-prefill-20261006/`, the
+request is `ab-request.json` (34,050 chars of `promessi_sposi.txt`, temperature 0). Both
+runs used the project-local ROCr runtime and `HSA_ENABLE_SDMA=1`, `--ctx 262144`,
+`--ssd-streaming --ssd-streaming-cold --ssd-streaming-cache-experts 18GB`,
+`DS4_ROCM_STREAM_FREE_RESERVE_GB=2`, `DS4_SSD_AUTO_CACHE_PCT=65`, and read weights from
+NVMe rather than the RAM disk, identically on both sides.
+
+**The gap is real and pre-existing.** The live session, a 10,513-token prompt with the
+tools template and the live-KV prefix path, prefilled at 13.82 t/s on average (first
+chunk 8.59, then 25.83 and 18.50) and decoded at 2.4 to 5.8 t/s while warming. The
+controlled run without tools hit 55 t/s. The documented CLI frontier
+(`PERFORMANCE_REFERENCE.md`) is 114.29 t/s prefill at 8K populated context, RAM-backed,
+and `35bacb1` measured 174 t/s. So the server path gives up 2x against the CLI bench
+without tools and 8x with them.
+
+What the logs show during the slow prefill: a steady trim and refill cycle, "trimmed 1
+streaming expert slab (1.00 GiB, 151 experts) for stream_span" and "releasing 0.02-0.62
+GiB q8 fp16 cache for stream_span" every few seconds, while the model tensor cache
+cycles 0.5 to 14 GiB and back. The first prefill chunk on a long-running service cost
+477 s against 158 s for the second.
+
+Candidates to test, in order of cheapness:
+
+1. Tools template and live-KV cost. Replay the same prompt with and without the tools
+   block and with `common=` prefix hits, using the same server state.
+2. Service uptime state. The first-chunk cost (477 s versus 158 s) appeared 19 hours
+   into a service run. Cold-start the service and replay the same prompt.
+3. `--ctx 262144`. The managed-KV message says it degrades performance. Measure the
+   same replay at `--ctx 32768` to price the configuration.
+4. Span reload per chunk. `DS4_ROCM_STREAM_CACHE_STATS=1` and
+   `DS4_ROCM_STREAM_CACHE_LAYER_STATS=1` on the same replay will show whether prefill
+   re-reads spans that the arena retirement (`c229363`) and upstream's tight arena
+   sizing (`ds4_rocm_model_arena_bytes`, merged 2026-10-05) could keep.
+
+None of this changes the merge verdict. It is the standing performance question for the
+server path, and the numbers above are its baseline.
