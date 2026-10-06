@@ -50,7 +50,7 @@
 #include "ds4_image.h"
 #include "ds4_engram.h"
 #include "ds4_tp.h"
-#if !defined(DS4_NO_GPU) && !defined(DS4_ROCM_BUILD)
+#if !defined(DS4_NO_GPU)
 #define DS4_HAS_DEEPSEEK41_GPU 1
 #endif
 #if !defined(DS4_NO_GPU) && !defined(DS4_ROCM_BUILD)

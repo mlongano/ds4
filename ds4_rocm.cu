@@ -174,9 +174,27 @@ extern "C" int ds4_gpu_dspark_gfx1151_fast_path(void) {
 #include "ds4_glm53_vision_gpu.cuh"
 #include "ds4_deepseek4_vision_gpu.cuh"
 #include "rocm/ds4_rocm_deepseek4_vision.cuh"
+/* V4.1 graph ops for the ROCm backend. The kernel source is shared with the
+ * CUDA backend and compiled through the compat layer in ds4_rocm.h. */
+#include "rocm/ds4_rocm_deepseek41.cuh"
 
 /* Tensor-parallel gates are Metal-only; stubs keep shared graph code
- * linkable (TP option validation rejects non-Metal backends). */
+ * linkable (TP option validation rejects non-Metal backends). The V4.1
+ * engine references the gate service entry points as well. */
+extern "C" int ds4_gpu_tp_init(uint32_t rank, ds4_gpu_tensor *slab,
+                               uint64_t gpu_flags_off, uint64_t out_off,
+                               uint64_t vec_bytes, ds4_gpu_tp_exchange_fn fn,
+                               void *ud) {
+    (void)rank; (void)slab; (void)gpu_flags_off; (void)out_off;
+    (void)vec_bytes; (void)fn; (void)ud;
+    fprintf(stderr, DS4_GPU_LOG_PREFIX "tensor parallelism is Metal-only\n");
+    return 0;
+}
+
+extern "C" void ds4_gpu_tp_shutdown(void) {}
+
+extern "C" int ds4_gpu_tp_failed(void) { return 0; }
+
 extern "C" int ds4_gpu_tp_gate_encode(uint32_t layer, uint32_t gate) {
     (void)layer; (void)gate;
     fprintf(stderr, DS4_GPU_LOG_PREFIX "tensor parallelism is Metal-only\n");

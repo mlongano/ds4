@@ -313,7 +313,7 @@ cuda:
 
 strix-halo:
 	$(MAKE) -B ds4 ds4-server ds4-bench ds4-eval ds4-agent \
-		CORE_OBJS="ds4.o ds4_image.o ds4_distributed.o ds4_tp.o ds4_ssd.o ds4_rocm.o ds4_rocm_compat.o ds4_rocm_unavailable.o ds4_layer_pack.o $(ROCM_MMQ_OBJS)" \
+		CORE_OBJS="ds4.o ds4_image.o ds4_distributed.o ds4_tp.o ds4_ssd.o ds4_engram.o ds4_rocm.o ds4_rocm_compat.o ds4_rocm_unavailable.o ds4_layer_pack.o $(ROCM_MMQ_OBJS)" \
 		CFLAGS="$(CFLAGS) $(ROCM_HOST_CFLAGS) -DDS4_ROCM_BUILD" \
 		DS4_LINK="$(HIPCC) $(ROCM_CFLAGS)" \
 		DS4_LINK_LIBS="$(ROCM_LDLIBS)"
@@ -339,7 +339,7 @@ test-rocm:
 		test-session-state \
 		tests/test_layer_pack tests/test_engine_mgpu_placement tests/test_gpu_args tests/test_prompt_prefix \
 		ds4 ds4-server ds4-bench ds4-agent \
-		CORE_OBJS="ds4.o ds4_image.o ds4_distributed.o ds4_tp.o ds4_ssd.o ds4_rocm.o ds4_rocm_compat.o ds4_rocm_unavailable.o ds4_layer_pack.o $(ROCM_MMQ_OBJS)" \
+		CORE_OBJS="ds4.o ds4_image.o ds4_distributed.o ds4_tp.o ds4_ssd.o ds4_engram.o ds4_rocm.o ds4_rocm_compat.o ds4_rocm_unavailable.o ds4_layer_pack.o $(ROCM_MMQ_OBJS)" \
 		CFLAGS="$(CFLAGS) $(ROCM_HOST_CFLAGS) -DDS4_ROCM_BUILD" \
 		DS4_LINK="$(HIPCC) $(ROCM_CFLAGS)" \
 		DS4_LINK_LIBS="$(ROCM_LDLIBS)"
@@ -1127,7 +1127,7 @@ clean:
 	rm -f tests/test_image_decode
 	rm -f tests/test_qwen4_kernels tests/test_qwen4_cuda tests/test_qwen4_vision tests/test_qwen4_prefill
 	rm -f speed-bench/session_concurrency_bench
+	rm -f tests/test_rocm_q8_prefill tests/bench_indexer_score_rocm tests/bench_mxfp4_rocm tests/test_engine_mgpu_placement tests/test_gpu_args tests/test_gpu_args_cli tests/test_layer_pack tests/dspark_acceptance_fixture
 
 # The active tokenizer includes generated Unicode classes.
 ds4.o ds4_cpu.o ds4_cpu_test_hooks.o: ds4_qwen4_unicode.inc
-	rm -f tests/test_rocm_q8_prefill tests/bench_indexer_score_rocm tests/bench_mxfp4_rocm tests/test_engine_mgpu_placement tests/test_gpu_args tests/test_gpu_args_cli tests/test_layer_pack tests/dspark_acceptance_fixture
