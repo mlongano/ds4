@@ -71,6 +71,25 @@ Completion criterion: a written take/skip verdict, with reason, for **every** co
    regression checks in `CONTRIBUTING.md`. → complete when: all exit 0 and speed is at or
    above the step-1 numbers; an unexplained regression is a failure, same as unexplained
    drift in `AGENT.md`.
+
+   On this machine (R9700) the gates need specific invocations, learned the hard way on
+   2026-10-05:
+
+   - `make test-rocm ROCM_ARCH=gfx1201 ROCM_EXTRA_CFLAGS=-DDS4_ROCM_NO_WMMA`. Without the
+     overrides it relinks every binary for gfx1151 and they do not run on the R9700.
+   - Run `./ds4_test` with `DS4_TEST_SSD_STREAMING=1` and
+     `DS4_ROCM_STREAM_FREE_RESERVE_GB=2`, plus the model and vector env from
+     `QA_BEFORE_RELEASES.md` (`DS4_TEST_MODEL` = the chat-0731 checkpoint,
+     `DS4_TEST_VECTOR_FILE`, `DS4_TEST_LOCAL_GOLDEN_FILE`). Without them, every
+     model-loading subtest fails on engine open and the vector gates compare against the
+     wrong checkpoint.
+   - `make dspark-acceptance` runs `tests/dspark_acceptance_fixture.sh` and skips when the
+     DSpark support model is absent. It also depends on `ds4` with default (CUDA) objects;
+     run the script directly if only the ROCm build exists.
+   - Two known pre-existing failures, both failing on `ab751c9` as well: `metal-kernels`
+     (paired Q8_0 exactness, our pair kernel is a few ULPs off bit-exactness) and
+     `tool-call-quality`. Do not attribute these to a merge without checking the baseline
+     first.
 5. **Deploy.** Save the previous binary (`cp ds4-server ds4-server.prev-$(date +%Y%m%d)`),
    then `pi-inference ds4`. → complete when: `pi-inference status` shows mode `ds4` and a
    smoke request through `127.0.0.1:8000/v1` answers.
