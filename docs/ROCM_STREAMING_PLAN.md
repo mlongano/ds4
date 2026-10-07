@@ -967,3 +967,35 @@ Candidates to test, in order of cheapness:
 
 None of this changes the merge verdict. It is the standing performance question for the
 server path, and the numbers above are its baseline.
+
+## Resolution: cold tmpfs pages, 2026-10-07
+
+None of the four candidates above. The slow prefill is the first request after
+an idle period, and the cause is memory pressure, not the tools template or the
+context size.
+
+The model lives in tmpfs, which is swappable, and this machine runs 112 of
+125 GB RAM in use with 26.9 GB in swap on the same NVMe. During idle the
+model's pages get evicted, and the next prefill pages them back at disk speed.
+Evidence: the same tools prompt prefilled at 473 s cold and 45 s warm; a slow
+run's own chunks went 9.34 t/s then 109.21 t/s inside one prompt as the pages
+came back; the live session's first chunk ran 8.59 t/s against 25.83 later.
+Warm, the tools prompt holds 174 t/s and the plain prompt 168 t/s, so the
+earlier tools-against-plain gap was warm-state confounded, not a tools cost.
+
+Fixes, both deployed 2026-10-07:
+
+1. `ds4-server-launch.sh` warms the model with one sequential read at idle
+   priority before serving.
+2. `ds4-ram-warm.timer`, a systemd user timer, re-warms every 25 minutes at
+   idle priority. It runs whether or not the ds4 service is up, so pages stay
+   hot across restarts, and it no-ops when `/mnt/ram/ds4flash.gguf` is absent.
+   To free the RAM on demand, `sh ram-disk-down.sh` unmounts the tmpfs and the
+   timer goes quiet until the next mount.
+
+Measured after: first requests at 45-64 s for 8-10.7K token prompts against
+473-760 s before. Decode benefits the same way, since expert span reads stop
+paging.
+
+The rejected-configurations list from 2026-10-06 stands unchanged. The A/B
+numbers there were NVMe-backed and remain valid for that mode.
