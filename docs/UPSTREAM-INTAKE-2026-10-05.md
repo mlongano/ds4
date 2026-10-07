@@ -166,8 +166,10 @@ Also model-bound and dead if the model changes: the refusal vector is 43 x 4096 
 Flash and has to be rebuilt, not copied, and the vision encoder pairing and expert
 cache defaults need re-checking.
 
-Verdict: take the code as-is. v4.1 is wanted on this machine (decided 2026-10-05),
-which turns "port v4.1 to the ROCm backend" into planned work rather than a footnote.
+Verdict: take the code as-is. v4.1 was wanted on this machine (decided
+2026-10-05) and the ROCm port was written on 2026-10-06 (`v41-rocm-port`),
+but the model itself is deferred as of 2026-10-07 on speed grounds. See
+`docs/STATE_OF_THE_CODEBASE_MiMo-V2.6-Pro_2026-10-05.md`.
 The feasibility picture, the weights and disk blocker, and the phased plan live in
 `docs/STATE_OF_THE_CODEBASE_MiMo-V2.6-Pro_2026-10-05.md`. The refusal direction must be
 rebuilt for v4.1 either way, and rebuilding it on a published dataset with recorded

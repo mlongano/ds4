@@ -211,12 +211,11 @@ Skip: the gfx1151 tuning set (`1ef9bba`, `e83b106`, `64e490b`, `394865c`, merge
 `909d656`). Decided on 2026-10-05: this fork is R9700-only from here on, so
 Strix tuning is not intent we defend in conflicts.
 
-DeepSeek v4.1 Flash support (`bd66c40`, `a04f46f`, `d9bc45d`, `6c00e2d`) is
-wanted, decided on 2026-10-05. The code merges as-is, but serving v4.1 on the
-R9700 needs a port first: upstream implements v4.1 for Metal and CUDA only, and
-says so in its `docs/MODELS.md`, "DSpark, pipeline execution and ROCm are not
-implemented for V4.1; vision requires Metal". What the port involves is in the
-v4.1 section below.
+DeepSeek v4.1 Flash support (`bd66c40`, `a04f46f`, `d9bc45d`, `6c00e2d`) merges
+as-is. The ROCm port of its graph was written on 2026-10-06 (`v41-rocm-port`,
+`a8893ec`) and passes upstream's model-free prefill dispatch test. The model
+itself is deferred on this machine, see the decision at the top of the v4.1
+section below.
 
 Skip: the Qwen3.8 Flash Next cluster (about 45 commits), the Metal batched
 decode and speculative batch work (about 25), CUDA/DSpark tuning, agent and
@@ -233,7 +232,18 @@ top of upstream's version.
 
 ## DeepSeek v4.1 Flash on the R9700: feasibility, 2026-10-05
 
-Wanted, so here is what it actually costs, checked against upstream's own
+**Decision, 2026-10-07: deferred.** The model stays off this machine. It
+streams 1.8x more weight bytes per token than V4 Flash and cannot use the RAM
+disk, so it would run at roughly a third of V4 Flash's decode speed, and V4
+Flash is already at the low limit of usable interactivity. V4 Flash stays the
+deployed model, the refusal vector stays as it is, and the disk question is
+moot. The port code lives on `v41-rocm-port` and should be validated against
+real weights before it merges into the deployed line. If v4.1 is ever wanted
+here or on bigger hardware, the phases below still apply, and the Engram
+pruning lever stands: 189 GiB of the 341 GiB file is retrieval tables that
+quantize and prune far more gracefully than network weights.
+
+Wanted at the time, so here is what it actually costs, checked against upstream's own
 documentation and this machine's numbers.
 
 **Weights and disk, the first blocker.** Upstream publishes three v4.1 files in
@@ -334,9 +344,8 @@ Loose ends I found, in rough order of annoyance:
   attention, targeted transfer benchmark, SDMA runtime investigation) that has
   not been started. The SDMA assertion is still only worked around by disabling
   SDMA, at a 10% decode cost.
-- DeepSeek v4.1 is wanted and planned (section above). It is gated on disk
-  headroom and on the ROCm port, and both the refusal vector and the vision
-  encoder pairing are model-bound and must be rebuilt for it.
+- DeepSeek v4.1 is deferred (decision in the section above). The port code is
+  on `v41-rocm-port`; V4 Flash stays deployed.
 
 ## Method note
 
